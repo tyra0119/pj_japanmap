@@ -376,6 +376,8 @@ async function loadManifest() {
 // the group the map exists to show.
 async function loadMesh(path) {
   state.mesh = null;
+  dataEpoch += 1;
+  lastAggKey = null;
   curveCache = null;
   prefCache = null;
   if (!path) return;
@@ -387,6 +389,14 @@ async function loadMesh(path) {
     mesh.fields.forEach((name, i) => { state.meshField[name] = i; });
     const pi = state.meshField.pop;
     mesh.total = mesh.cells.reduce((sum, c) => sum + (c[pi] || 0), 0);
+    // Projected once here rather than 466,145 times per frame.
+    const la = state.meshField.lat, lo = state.meshField.lon;
+    mesh.mx = new Float32Array(mesh.cells.length);
+    mesh.my = new Float32Array(mesh.cells.length);
+    for (let i = 0; i < mesh.cells.length; i++) {
+      mesh.mx[i] = mesh.cells[i][lo];
+      mesh.my[i] = mercY(mesh.cells[i][la]);
+    }
     state.mesh = mesh;
   } catch (e) { /* the stop-count readout still works without it */ }
 }
@@ -500,10 +510,27 @@ async function loadDataset(path, meshPath) {
   data.fields.forEach((name, i) => { state.field[name] = i; });
   data.lats = new Float32Array(data.stops.length);
   data.lons = new Float32Array(data.stops.length);
+  data.my = new Float32Array(data.stops.length);
   const li = state.field.lat, oi = state.field.lon;
   for (let i = 0; i < data.stops.length; i++) {
     data.lats[i] = data.stops[i][li];
     data.lons[i] = data.stops[i][oi];
+    data.my[i] = mercY(data.lats[i]);
+  }
+  // 始発・終発も曜日ごとに数値の配列にしておく。8万7千行の配列の配列を
+  // 毎フレーム引くのと、Int32Array を引くのとでは速さが違う。-1 は運行なし。
+  data.times = {};
+  for (const b of ["wd", "sa", "ho"]) {
+    const fi = state.field[`${b}_first_dep`], la = state.field[`${b}_last_dep`];
+    if (fi === undefined || la === undefined) continue;
+    const first = new Int32Array(data.stops.length);
+    const last = new Int32Array(data.stops.length);
+    for (let i = 0; i < data.stops.length; i++) {
+      const f = data.stops[i][fi], l = data.stops[i][la];
+      first[i] = (f === null || f === undefined) ? -1 : f;
+      last[i] = (l === null || l === undefined) ? -1 : l;
+    }
+    data.times[b] = { first, last };
   }
   state.data = data;
   await loadMesh(meshPath || path.replace(/stops(-[^/]*)?\.json$/, "mesh$1.json"));
@@ -594,6 +621,75 @@ function gapColor(gap) {
 // a hole in the data rather than a hole in the bus network.
 const NO_SERVICE_RGB = [64, 74, 92];
 
+/* ---------- layer painting ---------- */
+// 全国表示では1セルが1px前後になる。そこに fillRect と fillStyle を46万回
+// 出すと1フレーム 479ms かかった（実測）。時間のほとんどは矩形の塗りでは
+// なく、セルごとの `rgb(...)` 文字列の生成と、それを CSS 色として解釈し直す
+// ところにある。1セルが数px以下ならピクセルを直に書き、拡大して1セルが
+// 見える大きさになったときだけ矩形で描く。
+//
+// 書き込み先は地図タイルとは別の裏キャンバス。タイルは別オリジンなので、
+// 本体のキャンバスは getImageData を拒否する（汚染される）。
+let overlay = null, overlayImg = null, overlayBuf = null;
+
+function sizeOverlay() {
+  overlay = overlay || document.createElement("canvas");
+  overlay.width = canvas.width;
+  overlay.height = canvas.height;
+  overlayImg = overlay.getContext("2d").createImageData(canvas.width, canvas.height);
+  overlayBuf = new Uint32Array(overlayImg.data.buffer);
+}
+
+const PIXEL_SIDE = 2.5;
+
+function beginLayer(side, alpha) {
+  const w = canvas.width, h = canvas.height;
+  if (side <= PIXEL_SIDE) {
+    if (!overlayBuf || overlay.width !== w) sizeOverlay();
+    overlayBuf.fill(0);
+    return {
+      dot(x, y, r, g, b, a) {
+        const px = x | 0, py = y | 0;
+        if (px < 0 || py < 0 || px >= w || py >= h) return;
+        overlayBuf[py * w + px] = ((a * 255) | 0) << 24 | b << 16 | g << 8 | r;
+      },
+      end() {
+        overlay.getContext("2d").putImageData(overlayImg, 0, 0);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(overlay, 0, 0);
+        ctx.restore();
+      },
+    };
+  }
+  const styles = new Map();
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const half = side / 2;
+  return {
+    dot(x, y, r, g, b, a) {
+      const key = (r << 17 | g << 9 | b << 1) + (a < 1 ? 1 : 0);
+      let style = styles.get(key);
+      if (style === undefined) {
+        style = a < 1 ? `rgba(${r},${g},${b},${a})` : `rgb(${r},${g},${b})`;
+        styles.set(key, style);
+      }
+      ctx.fillStyle = style;
+      ctx.fillRect(x - half, y - half, side, side);
+    },
+    end() { ctx.restore(); },
+  };
+}
+
+// project() は点ごとに配列を作り mercY の log/tan を回す。46万回では効く。
+// 緯度の Mercator 変換はデータが変わらない限り変わらないので読み込み時に
+// 済ませ、毎フレームは掛けて足すだけにする。
+function viewTransform() {
+  const k = state.view.scale * devicePixelRatio;
+  return { k, cx: canvas.width / 2, cy: canvas.height / 2,
+           lon: state.view.lon, my: mercY(state.view.lat) };
+}
+
 function drawGapLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return;
@@ -601,21 +697,24 @@ function drawGapLayer() {
   const fi = state.meshField[`${state.bucket}_first`];
   const li = state.meshField[`${state.bucket}_last`];
   if (fi === undefined || li === undefined) return;
-  const la = state.meshField.lat, lo = state.meshField.lon;
   // One cell is 500 m; below a pixel it is not worth a fill call, but the
   // cells still have to cover the ground or the layer looks like noise.
   const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  for (const cell of mesh.cells) {
+  const { k, cx, cy, lon, my } = viewTransform();
+  const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
+  const w = canvas.width, h = canvas.height;
+  const paint = beginLayer(side, 0.85);
+  for (let i = 0; i < cells.length; i++) {
+    const x = cx + (mx[i] - lon) * k;
+    if (x < -side || x > w + side) continue;
+    const y = cy - (mys[i] - my) * k;
+    if (y < -side || y > h + side) continue;
+    const cell = cells[i];
     const gap = gapSeconds(cell[fi], cell[li]);
-    const [x, y] = project(cell[la], cell[lo]);
-    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
-    const [r, g, b] = gap === null ? NO_SERVICE_RGB : gapColor(gap);
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x - side / 2, y - side / 2, side, side);
+    const rgb = gap === null ? NO_SERVICE_RGB : gapColor(gap);
+    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  ctx.restore();
+  paint.end();
 }
 
 /* ---------- 休日の落差 ---------- */
@@ -658,20 +757,22 @@ function drawDropLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return;
   const dpr = devicePixelRatio;
-  const la = state.meshField.lat, lo = state.meshField.lon;
   const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  for (const cell of mesh.cells) {
-    const drop = holidayDrop(cell);
+  const { k, cx, cy, lon, my } = viewTransform();
+  const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
+  const w = canvas.width, h = canvas.height;
+  const paint = beginLayer(side, 0.85);
+  for (let i = 0; i < cells.length; i++) {
+    const x = cx + (mx[i] - lon) * k;
+    if (x < -side || x > w + side) continue;
+    const y = cy - (mys[i] - my) * k;
+    if (y < -side || y > h + side) continue;
+    const drop = holidayDrop(cells[i]);
     if (drop === null) continue;
-    const [x, y] = project(cell[la], cell[lo]);
-    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
-    const [r, g, b] = drop === "none" ? DROP_NONE_RGB : dropColor(drop);
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x - side / 2, y - side / 2, side, side);
+    const rgb = drop === "none" ? DROP_NONE_RGB : dropColor(drop);
+    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  ctx.restore();
+  paint.end();
 }
 
 function updateDrop() {
@@ -713,7 +814,7 @@ function updateDrop() {
 // here is 186 days, the extremes -34 and 885. The caveat is put on the screen
 // rather than left for the reader to assume otherwise.
 const CHANGE_GONE = [214, 68, 140], CHANGE_EARLIER = [206, 140, 62],
-      CHANGE_BETTER = [90, 150, 110];
+      CHANGE_BETTER = [90, 150, 110], NEUTRAL_RGB = [120, 134, 156];
 let changeData = null;
 
 let changeList = [];
@@ -738,6 +839,8 @@ async function loadChangeList() {
 
 async function loadChange(path) {
   changeData = null;
+  dataEpoch += 1;
+  lastAggKey = null;
   if (!path) return;
   try {
     const res = await fetch(path, { cache: "no-store" });
@@ -770,22 +873,22 @@ function drawChangeLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells || !changeData) return;
   const dpr = devicePixelRatio;
-  const la = state.meshField.lat, lo = state.meshField.lon;
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
-  ctx.save();
-  ctx.globalAlpha = 0.9;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr * 1.6;
+  const { k, cx, cy, lon, my } = viewTransform();
+  const w = canvas.width, h = canvas.height;
+  const paint = beginLayer(side, 0.9);
   for (const [n, row] of changeData.byCell) {
-    const cell = mesh.cells[n];
-    if (!cell) continue;
+    if (n >= mesh.mx.length) continue;
+    const x = cx + (mesh.mx[n] - lon) * k;
+    if (x < -side || x > w + side) continue;
+    const y = cy - (mesh.my[n] - my) * k;
+    if (y < -side || y > h + side) continue;
     const c = changeOf(row);
     if (c === 0) continue;
-    const [x, y] = project(cell[la], cell[lo]);
-    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
-    const [r, g, b] = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER : CHANGE_EARLIER;
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x - side / 2, y - side / 2, side * 1.6, side * 1.6);
+    const rgb = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER : CHANGE_EARLIER;
+    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  ctx.restore();
+  paint.end();
 }
 
 function updateChange() {
@@ -859,6 +962,8 @@ async function loadTimelineList() {
 
 async function loadTimeline(path) {
   timelineData = null;
+  dataEpoch += 1;
+  lastAggKey = null;
   if (!path) return;
   try {
     const res = await fetch(path, { cache: "no-store" });
@@ -908,26 +1013,34 @@ function drawTimelineLayer() {
   if (!series) return;
   const blank = eraBlank(series, state.era);
   const dpr = devicePixelRatio;
-  const side = Math.max(2, 0.0045 * state.view.scale) * dpr;
-  ctx.save();
-  for (const cell of series.cells) {
-    const [x, y] = project(cell[1], cell[2]);
-    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
+  const side = Math.max(2, 0.0045 * state.view.scale) * dpr * 1.6;
+  const { k, cx, cy, lon, my } = viewTransform();
+  const w = canvas.width, h = canvas.height;
+  if (!series.my) {
+    series.my = new Float32Array(series.cells.map((c) => mercY(c[1])));
+    series.mx = new Float32Array(series.cells.map((c) => c[2]));
+  }
+  const paint = beginLayer(side, 1);
+  for (let i = 0; i < series.cells.length; i++) {
+    const cell = series.cells[i];
+    const x = cx + (series.mx[i] - lon) * k;
+    if (x < -side || x > w + side) continue;
+    const y = cy - (series.my[i] - my) * k;
+    if (y < -side || y > h + side) continue;
     const c = blank ? 0 : eraChange(series, cell, state.era);
     // Cells that have not moved are still drawn, faintly: without them the
     // reader cannot tell an unchanged network from one that is not covered.
-    const [r, g, b] = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER
-                    : c > 0 ? CHANGE_EARLIER : [120, 134, 156];
+    const rgb = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER
+              : c > 0 ? CHANGE_EARLIER : NEUTRAL_RGB;
     // A minute and an hour are not the same loss. Flat colour paints the whole
     // city the moment any bus moves at all, which overstates it -- the shade
     // carries the size, saturating at an hour.
-    ctx.globalAlpha = c === 0 ? 0.28
-                    : c > 0 ? 0.3 + 0.62 * Math.min(1, c / 3600)
-                    : 0.92;
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(x - side / 2, y - side / 2, side * 1.6, side * 1.6);
+    const a = c === 0 ? 0.28
+            : c > 0 ? 0.3 + 0.62 * Math.min(1, c / 3600)
+            : 0.92;
+    paint.dot(x, y, rgb[0], rgb[1], rgb[2], a);
   }
-  ctx.restore();
+  paint.end();
 }
 
 function updateTimeline() {
@@ -1158,7 +1271,16 @@ function resize() {
   canvas.height = Math.floor(innerHeight * devicePixelRatio);
   canvas.style.width = innerWidth + "px";
   canvas.style.height = innerHeight + "px";
+  sizeOverlay();
   render();
+}
+
+// ドラッグとホイールはフレームより速く飛んでくる。届くたびに描くと、
+// 描き終わる前に次が来て入力が詰まる。1フレームに1回に間引く。
+let renderPending = 0;
+function requestRender() {
+  if (renderPending) return;
+  renderPending = requestAnimationFrame(() => { renderPending = 0; render(); });
 }
 
 function render() {
@@ -1179,8 +1301,6 @@ function render() {
   }
   if (!data) return;
 
-  const lastIdx = state.field[`${state.bucket}_last_dep`];
-  const firstIdx = state.field[`${state.bucket}_first_dep`];
   const t = state.t;
   const dpr = devicePixelRatio;
   const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * dpr;
@@ -1194,53 +1314,94 @@ function render() {
   // entirely -- and the basemap is what tells the reader where the gaps are.
   // Overlapping points still darken each other, so density stays visible.
   const live = [];
-  ctx.fillStyle = "rgba(160, 178, 200, 0.28)";
-  for (let i = 0; i < data.stops.length; i++) {
-    const last = data.stops[i][lastIdx];
-    if (last === null || last === undefined) continue;   // no service this day type
+  const { k, cx, cy, lon, my } = viewTransform();
+  const w = canvas.width, h = canvas.height;
+  const lons = data.lons, mys = data.my;
+  const times = (data.times || {})[state.bucket];
+  const firsts = times && times.first, lasts = times && times.last;
+  const n = data.stops.length;
+  const retired = beginLayer(r, 0.28);
+  for (let i = 0; i < n; i++) {
+    const last = lasts ? lasts[i] : -1;
+    if (last < 0) continue;                     // no service this day type
     servedStops++;
-    const live_ = inService(data.stops[i][firstIdx], last, t);
-    const [x, y] = project(data.lats[i], data.lons[i]);
-    if (x < -20 || y < -20 || x > canvas.width + 20 || y > canvas.height + 20) {
-      if (live_) liveStops++;
-      continue;
-    }
-    if (live_) {
-      liveStops++;
-      live.push(x, y);
-    } else {
-      ctx.fillRect(x - r / 2, y - r / 2, r, r);
-    }
+    const first = firsts[i];
+    const live_ = first < 0 ? t <= last : (first <= t && t <= last);
+    if (live_) liveStops++;
+    const x = cx + (lons[i] - lon) * k;
+    if (x < -20 || x > w + 20) continue;
+    const y = cy - (mys[i] - my) * k;
+    if (y < -20 || y > h + 20) continue;
+    if (live_) live.push(x, y);
+    else retired.dot(x, y, 160, 178, 200, 1);
   }
+  retired.end();
 
   ctx.fillStyle = "#ffcf6b";
-  ctx.beginPath();
-  for (let i = 0; i < live.length; i += 2) {
-    ctx.moveTo(live[i] + r, live[i + 1]);
-    ctx.arc(live[i], live[i + 1], r, 0, Math.PI * 2);
+  if (r <= PIXEL_SIDE) {
+    // One arc per point costs more than the whole rest of the frame once
+    // there are tens of thousands of them and each is a pixel wide.
+    for (let i = 0; i < live.length; i += 2) {
+      ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
+    }
+  } else {
+    ctx.beginPath();
+    for (let i = 0; i < live.length; i += 2) {
+      ctx.moveTo(live[i] + r, live[i + 1]);
+      ctx.arc(live[i], live[i + 1], r, 0, Math.PI * 2);
+    }
+    ctx.fill();
   }
-  ctx.fill();
 
   updateReadout(liveStops, servedStops, populationShare(t));
 }
 
-function populationShare(t) {
+// スライダーの1目盛りごとに46万セルを数え直していた。運行時間帯は区間なので、
+// 始発で足して終発の次で引く差分の配列を1回作れば、あとの時刻は引くだけで済む。
+const SHARE_STEP = 300;
+const SHARE_SLOTS = Math.floor((MAX_T - MIN_T) / SHARE_STEP) + 1;
+
+function shareProfile() {
   const mesh = state.mesh;
   const cells = scopedCells();
   if (!mesh || !cells || !cells.length) return null;
+  const key = `${dataEpoch}|${state.bucket}|${state.prefFilter}`;
+  if (shareCache.key === key) return shareCache.value;
+
   const li = state.meshField[`${state.bucket}_last`];
   const fi = state.meshField[`${state.bucket}_first`];
   const pi = state.meshField.pop;
-  let live = 0, everServed = 0, total = 0;
+  const delta = new Float64Array(SHARE_SLOTS + 1);
+  let everServed = 0, total = 0;
+  // 端は丸めずに、始発は次の目盛りまで切り上げ、終発は前の目盛りまで切り下げる。
+  // 先に丸めてしまうと 04:35 発が 04:30 から動いていることになる。
+  const slot = (v) => (v - MIN_T) / SHARE_STEP;
   for (const cell of cells) {
+    const pop = cell[pi] || 0;
+    total += pop;
     const last = cell[li];
     if (last === null || last === undefined) continue;
-    const pop = cell[pi] || 0;
     everServed += pop;
-    if (inService(cell[fi], last, t)) live += pop;
+    const first = cell[fi];
+    const from = Math.max(0, first === null || first === undefined ? 0 : Math.ceil(slot(first)));
+    const to = Math.min(SHARE_SLOTS - 1, Math.floor(slot(last)));
+    if (to < from) continue;
+    delta[from] += pop;
+    delta[to + 1] -= pop;
   }
-  for (const cell of cells) total += cell[pi] || 0;
-  return { live, everServed, total, walk: (mesh.meta || {}).walk_m };
+  const live = new Float64Array(SHARE_SLOTS);
+  let running = 0;
+  for (let i = 0; i < SHARE_SLOTS; i++) { running += delta[i]; live[i] = running; }
+  shareCache = { key, value: { live, everServed, total, walk: (mesh.meta || {}).walk_m } };
+  return shareCache.value;
+}
+
+function populationShare(t) {
+  const profile = shareProfile();
+  if (!profile) return null;
+  const i = Math.max(0, Math.min(SHARE_SLOTS - 1, Math.round((t - MIN_T) / SHARE_STEP)));
+  return { live: profile.live[i], everServed: profile.everServed,
+           total: profile.total, walk: profile.walk };
 }
 
 function fmt(seconds) {
@@ -1321,10 +1482,18 @@ function updateReadout(liveStops, servedStops, pop) {
       : "改正を並べる",
   }[state.mode];
   $("scopeCurrent").textContent = scopeName();
-  updateGap();
-  updateDrop();
-  updateChange();
-  updateTimeline();
+  // どれも時刻には依存しない（始発と終発そのものを見ている）。スライダーを
+  // 動かすたびに走らせる理由は無い。曲線はデータをキャッシュ済みなので、
+  // 目盛りを動かすために毎回描いてよい。
+  const key = [dataEpoch, state.mode, state.bucket, state.prefFilter,
+               state.era].join("|");
+  if (key !== lastAggKey) {
+    lastAggKey = key;
+    updateGap();
+    updateDrop();
+    updateChange();
+    updateTimeline();
+  }
   drawCurve();
   // The curve describes one timetable; next to a diff of two it just invites
   // the question of which one it is.
@@ -1347,6 +1516,7 @@ function updateReadout(liveStops, servedStops, pop) {
 // the morning rise. It spans the same hours as the slider so the marker on it
 // is always meaningful.
 const CURVE_FROM = MIN_T, CURVE_TO = MAX_T, CURVE_STEP = 1800;
+let lastAggKey = null;
 let curveCache = null;   // {key, points:[{t,pop}], total}
 
 function curveFor() {
@@ -1484,13 +1654,26 @@ $("creditClose").onclick = () => { $("creditPanel").hidden = true; };
 // Every readout below is computed over the same set of cells, so the scope is
 // one decision rather than three. Without this the panel could show a national
 // curve beside a prefectural gap and nothing would say so.
+// 読み取り欄の数字は地図の位置にも縮尺にも依存しない。ドラッグのたびに
+// 46万セルを数え直す理由は無いので、依存するものが変わったときだけ計算する。
+// dataEpoch は読み込み直しのたびに進めて、古い集計を捨てさせる。
+let dataEpoch = 0;
+let scopeCache = { key: null, cells: null };
+let shareCache = { key: null, value: null };
+
 function scopedCells() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return null;
   if (!state.prefFilter) return mesh.cells;
   const pri = state.meshField.pref;
   if (pri === undefined) return mesh.cells;
-  return mesh.cells.filter((c) => c[pri] === state.prefFilter);
+  const key = `${dataEpoch}|${state.prefFilter}`;
+  if (scopeCache.key !== key) {
+    // フィルタは毎フレーム新しい配列を作っていた。県を選ぶと重くなるのは
+    // 描画ではなくこれだった。
+    scopeCache = { key, cells: mesh.cells.filter((c) => c[pri] === state.prefFilter) };
+  }
+  return scopeCache.cells;
 }
 
 function scopeName() {
@@ -1700,7 +1883,7 @@ $("changePick").onchange = async (e) => {
 /* ---------- interaction ---------- */
 $("time").addEventListener("input", (e) => {
   state.t = Number(e.target.value);
-  render();
+  requestRender();
 });
 
 let drag = null;
@@ -1713,7 +1896,7 @@ canvas.addEventListener("pointermove", (e) => {
   if (!drag) return showTip(e);
   state.view.lat = mercLat(drag.y0 + (e.clientY - drag.y) / state.view.scale);
   state.view.lon = drag.lon - (e.clientX - drag.x) / state.view.scale;
-  render();
+  requestRender();
 });
 for (const ev of ["pointerup", "pointercancel"]) {
   canvas.addEventListener(ev, () => { drag = null; canvas.classList.remove("dragging"); });
@@ -1725,7 +1908,7 @@ canvas.addEventListener("wheel", (e) => {
   const [lat1, lon1] = unproject(e.clientX, e.clientY);
   state.view.lat += lat0 - lat1;
   state.view.lon += lon0 - lon1;
-  render();
+  requestRender();
 }, { passive: false });
 
 function showTip(e) {
