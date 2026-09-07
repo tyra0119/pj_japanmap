@@ -46,13 +46,8 @@
   .bar > i { display: block; height: 100%; background: var(--live); transition: width .1s linear; }
   .note { color: var(--muted); font-size: 10.5px; border-top: 1px solid var(--line);
           padding-top: 9px; margin-top: 4px; }
-  #gapMetric .label { display: flex; align-items: center; justify-content: space-between; }
-  #gapMetric button { background: none; border: 1px solid var(--line); color: var(--muted);
-                      border-radius: 5px; padding: 2px 7px; font: inherit; font-size: 10px;
-                      cursor: pointer; }
-  #gapMetric button[aria-pressed="true"] { background: var(--accent); color: #06121e;
-                                           border-color: var(--accent); }
   #gapMetric .sub { margin: 5px 0 0; }
+  .why { color: #6f7d90; font-size: 10px; margin-top: 4px; }
   #curveMetric .sub { margin: 6px 0 0; }
   #curve { width: 100%; height: 66px; display: block; margin-top: 6px; }
   .gapscale { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 5px; }
@@ -76,15 +71,39 @@
   select { background: #131923; color: var(--text); border: 1px solid var(--line);
            border-radius: 7px; padding: 6px 9px; font: inherit; }
 
-  #prefPanel { left: 16px; top: 128px; width: 250px; font-size: 11px; color: var(--muted);
-               max-height: calc(100vh - 260px); display: flex; flex-direction: column; }
-  /* An author `display` beats the UA rule behind the `hidden` attribute, so a
-     panel that needs `display: flex` has to opt back out of it explicitly. */
-  #prefPanel[hidden] { display: none; }
-  #prefPanel b { color: var(--text); font-size: 12.5px; }
-  #prefPanel .sub { font-size: 10px; margin: 3px 0 7px; }
-  #prefRows { overflow-y: auto; flex: 1; margin-right: -6px; padding-right: 6px; }
-  .prow { display: grid; grid-template-columns: 3.6em 4.6em 1fr 2.6em; gap: 6px;
+  /* 左＝何を見るか。表示モード・凡例・範囲を一枚にまとめる。 */
+  #controlPanel { left: 16px; top: 16px; width: 262px; font-size: 11px;
+                  color: var(--muted); max-height: calc(100vh - 130px);
+                  display: flex; flex-direction: column; }
+  #controlPanel b { color: var(--text); font-size: 13px; display: block; }
+  #controlPanel .sub { font-size: 10px; margin: 3px 0 0; line-height: 1.4; }
+  .ctl { border-top: 1px solid var(--line); margin-top: 11px; padding-top: 10px;
+         display: flex; flex-direction: column; min-height: 0; }
+  .ctlhead { display: flex; align-items: center; justify-content: space-between;
+             color: var(--text); font-size: 10.5px; margin-bottom: 6px; letter-spacing: .04em; }
+  .ctl .seg { width: 100%; }
+  .ctl .seg button { flex: 1; padding: 6px 0; }
+  .legend { margin-top: 8px; }
+  .legend .row { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
+  .legend .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .hintline { margin-top: 7px; color: #6f7d90; font-size: 10px; }
+  button.wide { width: 100%; display: flex; justify-content: space-between;
+                align-items: center; background: #131923; border: 1px solid var(--line);
+                color: var(--text); border-radius: 7px; padding: 6px 9px; font: inherit;
+                cursor: pointer; }
+  button.wide .caret { color: var(--muted); transition: transform .12s; }
+  button.wide[aria-expanded="true"] .caret { transform: rotate(180deg); }
+  #scopeClear, #creditToggle, #creditClose {
+      background: none; border: 1px solid var(--line); color: var(--muted);
+      border-radius: 5px; padding: 2px 7px; font: inherit; font-size: 10px; cursor: pointer; }
+  #prefWrap { display: flex; flex-direction: column; min-height: 0; margin-top: 7px; }
+  /* An author `display` beats the UA rule behind the `hidden` attribute, so
+     anything laid out with flex has to opt back out of it explicitly. */
+  #prefWrap[hidden], #creditPanel[hidden], #stopMetric[hidden],
+  #gapMetric[hidden], #curveMetric[hidden] { display: none; }
+  #prefRows { overflow-y: auto; flex: 1; margin-right: -6px; padding-right: 6px;
+              max-height: 34vh; }
+  .prow { display: grid; grid-template-columns: 3.6em 4.4em 1fr 2.6em; gap: 6px;
           align-items: center; padding: 2px 3px; border-radius: 4px; cursor: pointer; }
   .prow:hover { background: #1b2330; }
   .prow .nm { color: var(--text); }
@@ -92,22 +111,14 @@
   .prow .bw { height: 3px; background: var(--dead); border-radius: 2px; overflow: hidden; }
   .prow .bw i { display: block; height: 100%; }
   .prow .cv { text-align: right; font-size: 10px; font-variant-numeric: tabular-nums; }
-  #legend { left: 16px; top: 16px; font-size: 11px; color: var(--muted); padding: 10px 13px; }
-  #legend .toggle { background: none; border: 1px solid var(--line); color: var(--muted);
-                    border-radius: 5px; padding: 2px 7px; font: inherit; font-size: 10px;
-                    cursor: pointer; margin-top: 7px; }
-  #legend .toggle[aria-pressed="true"] { background: var(--accent); color: #06121e;
-                                         border-color: var(--accent); }
-  #legend b { color: var(--text); font-weight: 600; font-size: 12.5px; display: block; margin-bottom: 5px; }
-  #legend .row { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
-  #legend .dot { width: 7px; height: 7px; border-radius: 50%; }
-  #hint { position: absolute; left: 16px; bottom: 92px; color: var(--muted); font-size: 10.5px; }
-  #credit { position: absolute; right: 10px; bottom: 6px; color: var(--muted); font-size: 10.5px; z-index: 5; }
-  #credit a { color: inherit; }
-  #credit button, #creditClose { background: none; border: 1px solid var(--line);
-      color: var(--muted); border-radius: 5px; padding: 2px 8px; font: inherit;
-      font-size: 10.5px; cursor: pointer; }
-  #creditPanel { right: 16px; bottom: 30px; width: 340px; max-height: 62vh;
+  .warn { font-size: 10px; line-height: 1.45; margin-top: 8px; color: #6f7d90; }
+  .warn b { color: var(--text); }
+  .foot { border-top: 1px solid var(--line); margin-top: 11px; padding-top: 9px; }
+  #hint { position: absolute; right: 16px; bottom: 6px; color: var(--muted); font-size: 10.5px; }
+  /* In the gap view the clock still drives the curve, but it no longer drives
+     the map -- dimmed so the difference is visible before it is tried. */
+  #controls.timeless #clock, #controls.timeless #time { opacity: .45; }
+  #creditPanel { left: 16px; bottom: 16px; width: 340px; max-height: 62vh;
                  display: flex; flex-direction: column; z-index: 6; font-size: 11px;
                  color: var(--muted); }
   #creditPanel[hidden] { display: none; }
@@ -127,41 +138,73 @@
 <div id="status">読み込み中…</div>
 <div id="tip"></div>
 
-<div class="panel" id="legend">
+<!-- 操作は3箇所に集約する。左＝何を見るか、右＝その結果、下＝いつ。
+     以前はモード切替が読み取り欄の中、県一覧が別パネル、範囲の解除が見出しと
+     散っていて、どのボタンが何を変えるのか押すまで分からなかった。 -->
+<div class="panel" id="controlPanel">
   <b>全国バス運行時間マップ</b>
-  <div id="legendStops">
-    <div class="row"><span class="dot" style="background:var(--live)"></span>この時刻は運行時間帯</div>
-    <div class="row"><span class="dot" style="background:var(--dead-dot)"></span>運行時間外</div>
+  <div class="sub">GTFSを公開している事業者のバスが、いつ・どこで使えるか</div>
+
+  <div class="ctl">
+    <div class="ctlhead">地図に出すもの</div>
+    <div class="seg" id="modes">
+      <button type="button" data-mode="stops" aria-pressed="true">停留所</button>
+      <button type="button" data-mode="gap" aria-pressed="false">空白時間</button>
+    </div>
+    <div class="legend" id="legendStops">
+      <div class="row"><span class="dot" style="background:var(--live)"></span>その時刻は運行時間帯</div>
+      <div class="row"><span class="dot" style="background:var(--dead-dot)"></span>運行時間外</div>
+      <div class="hintline">下のスライダーで時刻を動かす</div>
+    </div>
+    <div class="legend" id="legendGap" hidden>
+      <div class="row">1日のうち公共交通が無い時間</div>
+      <div class="gapscale"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="row" style="justify-content:space-between"><span>6時間</span><span>20時間</span></div>
+      <div class="row"><span class="dot" style="background:rgb(64,74,92)"></span>便が無い</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>人が住んでいない</div>
+      <div class="hintline">場所の性質なので時刻では変わらない</div>
+    </div>
   </div>
-  <button class="toggle" id="prefToggle" type="button">都道府県別を見る</button>
-  <div id="legendGap" hidden>
-    <div class="row">1日のうち公共交通が無い時間</div>
-    <div class="gapscale"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="row" style="justify-content:space-between"><span>6時間</span><span>20時間</span></div>
+
+  <div class="ctl">
+    <div class="ctlhead">範囲 <button id="scopeClear" type="button" hidden>全国に戻す</button></div>
+    <button class="wide" id="prefToggle" type="button" aria-expanded="false">
+      <span id="scopeCurrent">全国</span><span class="caret">▾</span></button>
+    <div id="prefWrap" hidden>
+      <div class="sub">公共交通が無い時間の長い順。クリックでその県だけを見る</div>
+      <div id="prefRows"></div>
+      <div class="warn">
+        右端の「収録」が低い県は、事業者がGTFSを公開していないだけのことが多い。
+        <b>順位を交通の順位として読まないこと。</b>
+      </div>
+    </div>
+
   </div>
+
+  <div class="foot"><button id="creditToggle" type="button">出典とライセンス</button></div>
 </div>
 
 <div class="panel" id="readout">
-  <h1><span id="scopeName">全国</span>で、この時刻に動いている
-    <button id="scopeClear" type="button" hidden>全国に戻す</button></h1>
+  <h1><span id="scopeName">全国</span>で、この時刻に動いている</h1>
   <div class="sub" id="basis">—</div>
   <div class="metric">
     <div class="label" id="primaryLabel">人口カバー率</div>
     <div class="value"><span id="primaryValue">–</span><small>%</small></div>
     <div class="bar"><i id="primaryBar" style="width:0"></i></div>
+    <div class="why">徒歩500m圏が始発から終発の間にある人の割合</div>
   </div>
-  <div class="metric">
+  <div class="metric" id="stopMetric">
     <div class="label">稼働中の停留所</div>
     <div class="value"><span id="stopValue">–</span><small id="stopTotal"></small></div>
     <div class="bar"><i id="stopBar" style="width:0"></i></div>
   </div>
   <div class="metric" id="curveMetric">
-    <div class="label">使える人口の一日（<span id="curveScope">全国</span>）</div>
+    <div class="label">使える人口の一日</div>
     <canvas id="curve" height="132"></canvas>
     <div class="sub" id="curveNote"></div>
   </div>
   <div class="metric" id="gapMetric" hidden>
-    <div class="label">公共交通が無い時間 <button id="gapToggle" type="button">地図に塗る</button></div>
+    <div class="label">公共交通が無い時間</div>
     <div class="value"><span id="gapValue">–</span><small>/日</small></div>
     <div class="gapscale"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="sub" id="gapNote"></div>
@@ -169,22 +212,10 @@
   <div class="note" id="meta"></div>
 </div>
 
-<div class="panel" id="prefPanel" hidden>
-  <b>都道府県別</b>
-  <div class="sub">公共交通が無い時間の長い順。クリックでその県へ</div>
-  <div id="prefRows"></div>
-  <div class="note">
-    カバー率が低い県は、その県の事業者がGTFSを公開していないだけのことが多い。
-    <b>順位を交通の順位として読まないこと。</b>空白時間は便がある場所だけで
-    測るので影響は小さいが、収録されている路線の性格には左右される。
-  </div>
-</div>
-
 <div id="hint">ドラッグで移動 / ホイールで拡大縮小</div>
-<div id="credit"><button id="creditToggle" type="button">出典</button></div>
 
 <div class="panel" id="creditPanel" hidden>
-  <b>出典</b>
+  <b>出典とライセンス</b>
   <div id="creditBody"></div>
   <button id="creditClose" type="button">閉じる</button>
 </div>
@@ -403,7 +434,7 @@ function buildBucketButtons(data) {
       state.bucket = b;
       curveCache = null;
       prefCache = null;
-      if (!$("prefPanel").hidden) drawPrefs();
+      if (!$("prefWrap").hidden) drawPrefs();
       [...host.children].forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
       $("daylabel").textContent = btn.textContent;
       render();
@@ -461,6 +492,12 @@ function gapColor(gap) {
   return GAP_STOPS[GAP_STOPS.length - 1][1];
 }
 
+// Cells with no bus at all. Painted, because "nothing here" is the finding in
+// a map about access -- but painted in a colour that is plainly not on the
+// gap ramp, because in a prefecture whose operators publish nothing this is
+// a hole in the data rather than a hole in the bus network.
+const NO_SERVICE_RGB = [64, 74, 92];
+
 function drawGapLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return;
@@ -476,10 +513,9 @@ function drawGapLayer() {
   ctx.globalAlpha = 0.85;
   for (const cell of mesh.cells) {
     const gap = gapSeconds(cell[fi], cell[li]);
-    if (gap === null) continue;
     const [x, y] = project(cell[la], cell[lo]);
     if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
-    const [r, g, b] = gapColor(gap);
+    const [r, g, b] = gap === null ? NO_SERVICE_RGB : gapColor(gap);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(x - side / 2, y - side / 2, side, side);
   }
@@ -678,9 +714,9 @@ function updateReadout(liveStops, servedStops, pop) {
   // The stop count comes from the stop table, which carries no prefecture, so
   // it is the one figure that cannot follow the selection. Hide it rather than
   // leave a national number sitting among prefectural ones.
-  $("stopValue").parentElement.parentElement.hidden = state.gapLayer || !!state.prefFilter;
+  $("stopMetric").hidden = state.gapLayer || !!state.prefFilter;
   $("scopeName").textContent = scopeName();
-  $("curveScope").textContent = scopeName();
+  $("scopeCurrent").textContent = scopeName();
   updateGap();
   drawCurve();
   const m = data.meta || {};
@@ -942,11 +978,10 @@ $("scopeClear").onclick = () => {
 };
 
 $("prefToggle").onclick = (e) => {
-  const on = $("prefPanel").hidden;
-  $("prefPanel").hidden = !on;
-  e.currentTarget.setAttribute("aria-pressed", String(on));
-  e.currentTarget.textContent = on ? "都道府県別を閉じる" : "都道府県別を見る";
-  if (on) drawPrefs();
+  const open = $("prefWrap").hidden;
+  $("prefWrap").hidden = !open;
+  e.currentTarget.setAttribute("aria-expanded", String(open));
+  if (open) drawPrefs();
 };
 
 // The gap does not move with the slider -- it is what the place is like all
@@ -976,19 +1011,42 @@ function updateGap() {
   const mean = weighted / people;
   $("gapValue").textContent =
     `${Math.floor(mean / 3600)}時間${String(Math.round(mean % 3600 / 60)).padStart(2, "0")}分`;
-  $("gapNote").textContent =
+  let none = 0, all = 0;
+  for (const cell of cells) {
+    const pop = cell[pi] || 0;
+    all += pop;
+    if (cell[li] === null || cell[li] === undefined) none += pop;
+  }
+  const share = all ? people / all : 0;
+  $("gapNote").innerHTML =
     `便がある ${Math.round(people).toLocaleString("ja-JP")} 人の平均。` +
-    `うち ${Math.round(worst).toLocaleString("ja-JP")} 人は1日4時間未満しか便が無い`;
+    `うち ${Math.round(worst).toLocaleString("ja-JP")} 人は1日4時間未満しか便が無い` +
+    `<br>便が無い ${Math.round(none).toLocaleString("ja-JP")} 人（収録 ` +
+    `${(share * 100).toFixed(0)}%）` +
+    (share < 0.5
+      ? `。<b>収録が低いので、この「便が無い」はデータの欠けを多く含む</b>`
+      : `。収録が高いので、これはおおむね本当に便が無い場所`);
 }
 
-$("gapToggle").onclick = (e) => {
-  state.gapLayer = !state.gapLayer;
-  e.currentTarget.setAttribute("aria-pressed", String(state.gapLayer));
-  e.currentTarget.textContent = state.gapLayer ? "点に戻す" : "地図に塗る";
+// One switch decides what the map shows; the legend and the time controls
+// follow from it rather than being separate things to find and understand.
+function setMode(mode) {
+  state.gapLayer = mode === "gap";
+  for (const b of document.querySelectorAll("#modes button")) {
+    b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+  }
   $("legendStops").hidden = state.gapLayer;
   $("legendGap").hidden = !state.gapLayer;
+  // The gap is a property of the place, not of the moment, so the slider does
+  // not move this map. Dimming it beats leaving the reader to drag it and
+  // conclude the page is broken.
+  $("controls").classList.toggle("timeless", state.gapLayer);
   render();
-};
+}
+
+for (const b of document.querySelectorAll("#modes button")) {
+  b.onclick = () => setMode(b.dataset.mode);
+}
 
 /* ---------- interaction ---------- */
 $("time").addEventListener("input", (e) => {
