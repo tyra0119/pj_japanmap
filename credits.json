@@ -1,0 +1,3062 @@
+{
+  "operators": [
+    {
+      "holder": "中津市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 18
+    },
+    {
+      "holder": "さいたま市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 14
+    },
+    {
+      "holder": "南信州地域交通問題協議会（南信州広域連合）",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 12
+    },
+    {
+      "holder": "三重交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 8
+    },
+    {
+      "holder": "北九州市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 8
+    },
+    {
+      "holder": "富山市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 7
+    },
+    {
+      "holder": "宗像市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 5
+    },
+    {
+      "holder": "長電バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 5
+    },
+    {
+      "holder": "静岡市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 5
+    },
+    {
+      "holder": "高知西南交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 5
+    },
+    {
+      "holder": "とさでん交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "加越能バス",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "宿毛市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "寒川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "小松市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "濃飛乗合自動車（濃飛バス）",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "琴参バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "西尾市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "身延町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "飯能市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 3
+    },
+    {
+      "holder": "JR東日本盛岡支社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "いの町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "つくば市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "上士幌町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "伊勢市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "八百津町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "加西市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "北振バス株式会社",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "十和田観光電鉄株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "南国市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "南海りんかんバス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "君津市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "大町市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "宍粟市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "富山地方鉄道",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "平川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "弘前市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "徳島市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "志摩市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "掛川市",
+      "license": "CC-BY",
+      "license_url": "https://www.city.kakegawa.shizuoka.jp/gyosei/docs/383694.html",
+      "feeds": 2
+    },
+    {
+      "holder": "新宮町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "松戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "松本市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "株式会社四万十交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "株式会社高知駅前観光",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "淡路市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "熊野市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "熊野御坊南海バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "瑞穂町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "羽後交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "西宮市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "西宮市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "豊岡市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "豊田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "赤穂市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 2
+    },
+    {
+      "holder": "須崎市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "香美市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "高山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "魚津市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "鳥羽市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "鳴門市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 2
+    },
+    {
+      "holder": "NPO法人清里観光振興会",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "あおい交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "あま市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "いなべ市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "おおのハートバス(ささき観光)",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "おのみちバス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "かつらぎ町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "くしもと観光周遊バス推進協議会（事務局：和歌山県立南紀熊野ジオパークセンター））",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "すさみ町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "たつの市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "ちばレインボーバス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "つがる市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "つるぎ町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "みやま市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "みよし市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "オレンジフェリー",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "ジェイアール四国バス株式会社 高知支店",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "バスネット津",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "フォーブル",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "ボンバス(エイチ・ディー西広島)",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "一関市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "七ヶ浜町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "七宗町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "七戸町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "万葉線",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "三原村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "三好市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "三朝町営バス(みささサンサンバス)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "三条市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "三沢市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "三豊市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上勝町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上市町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上松町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上田バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "上越市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "上郡町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "下北交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "下呂市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中国ジェイアールバス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中国バス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中土佐町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中山町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中泊町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中津川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中紀バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "中野市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "久山町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "亀山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "二宮町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "五所川原市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "京成バス千葉ウエスト株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "京王バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "京福バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "京都バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "京都市営バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "仁淀川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "仙北市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "伊万里市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "伊勢鉄道",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "伊賀市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "佐川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "佐用町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "信濃町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "備北交通",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "入善町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "八幡観光バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "八戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "八戸市交通部",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "八重瀬町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "八頭町営バス(やずバス)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "公益財団法人高知県観光コンベンション協会",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "六ヶ所村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "内灘町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "刈谷市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "加古川市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "加東市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "加茂市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "勝央町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "勝山市コミュニティバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北名古屋市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北島町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北川村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北恵那交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北杜市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北相木村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "北設楽郡公共交通活性化協議会",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "十和田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "千曲バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "千曲市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南あわじ市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "南伊勢町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南木曽町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南知多町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南砺市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南部町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南部町営ふれあいバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "南陽市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "印西市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "古賀市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "可児市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "合同会社やんばる急行バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "吉野川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "名張市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "名鉄海上観光船株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "名門大洋フェリー",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "呉市生活バス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "周防灘フェリー",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "和光市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "和気町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "嘉麻市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "四万十市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "四万十町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "四日市市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "四街道市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "国立市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "国立市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "国際興業",
+      "license": "公共交通オープンデータチャレンジ限定ライセンス（チャレンジ応募が前提）",
+      "license_url": "",
+      "feeds": 1
+    },
+    {
+      "holder": "土佐市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "土佐清水市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "土岐市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "土浦市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "坂井市コミュニティバス ぐるっと坂井",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "塩尻市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "壬生町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "外ヶ浜町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "多気町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "多治見市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大利根交通自動車株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大口町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大台町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大和郡山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大和高田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大垣市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大新東株式会社",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大月町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大東市コミュニティバス・乗合タクシー",
+      "license": "CC BY 2.1",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "大桑村",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大江町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大泉町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大洲市内循環バス「ぐるりんおおず」",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大玉村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大田原市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大竹市 大竹・栗谷線バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大蔵村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大野市営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "大鰐町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "天童市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "太宰府市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "太田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "太陽交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "奈義町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "奥州市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "姫路市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "宇和島運輸フェリー",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "守山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "安中市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "安城市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "安堵町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "安田町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "安芸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "宝塚市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "室戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "宮若市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "富山県朝日町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "寒河江市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "射水市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "小田急バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "小矢部市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "小笠原村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "小菅村",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "小野市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "尾張旭市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "尾花沢市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "尾鷲市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山形交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山形市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山形県小国町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山形県金山町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山形鉄道株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山県市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "山辺町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "岐阜市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "岡谷市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "岩出市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "岩宇地域公共交通活性化協議会",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "岩美町営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "島田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "川上村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "川崎市バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "川崎町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "川崎鶴見臨港バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "川越町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "市川三郷町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "市川町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "常滑市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "平内町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "平戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "広島バス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "広島交通",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "広電バス(広島電鉄)",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "庄内交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "庄内町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "度会町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "廿日市市自主運行バス",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "御嵩町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "徳島バス南部株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "徳島バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "徳島市交通局",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "恵那市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "成田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "戸沢村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "揖斐川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "敦賀市コミュニティバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "斎島汽船",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "新城市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "新常磐交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "新庄市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "新温泉町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "新見市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "新郷村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日ノ丸自動車",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日光市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日南町巡回バス(たったもバス)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日向市コミュニティバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日本交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日進市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日野町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "日野町営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "早島町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "明光バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "明和町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "明知鉄道",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "明石市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "春日市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "昭島市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "最上川交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "有田川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "有限会社嶺北観光自動車",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "有限会社黒岩観光",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "朝日交通「阿戸線」",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "朝日町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "木曽岬町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "木曽広域連合",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "木曽町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "木祖村",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "本宮市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "本山町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "本巣市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "村上市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "村山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東みよし町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東京都交通局 都営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東京都町田市 コミュニティバス・市民バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "東信観光バス株式会社",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東北町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東員町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東急バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "",
+      "feeds": 1
+    },
+    {
+      "holder": "東根市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東武バス",
+      "license": "公共交通オープンデータチャレンジ限定ライセンス（チャレンジ応募が前提）",
+      "license_url": "",
+      "feeds": 1
+    },
+    {
+      "holder": "東浦町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東海市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東濃鉄道",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "東近江市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "松茂町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "松阪市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "柳川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "柳津町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "栗東市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "株式会社タケヤ交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "株式会社甘木観光バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "株式会社県交北部交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "根室交通株式会社",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "桑名市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "横浜市営バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "横須賀市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "武豊町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "水巻町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "永井運輸株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "永平寺町コミュニティバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "江府町営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "江田島バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "池田町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "池田町民バス「なかま号」",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "河北町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "津エアポートライン",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "津山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "津市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "津野町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "洲本市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "流山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "海津市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "海陽町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "深浦町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "添田町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "湖南市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "滑川市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "瀬戸内市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "瀬戸内市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "瀬戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "熊本バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "熊本市交通局",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "熊本都市バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "熊本電鉄",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "熊本電鉄",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "熊谷市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "燕市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "猪名川町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "王滝村",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "玖珠町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "琴浦町営バス(ことうらバス)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "瑞浪市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "生活バス四日市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "産交バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "田川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "田辺市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "田野町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "甲斐市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "甲賀市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "白山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "白鳥交通",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "白鷹町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "益田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "直島町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "直方市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "相鉄バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "",
+      "feeds": 1
+    },
+    {
+      "holder": "真室川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "真庭市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "矢板市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "知多乗合（知多バス）",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "知多市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "知立市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "石狩湾新港地域公共交通サービス推進協議会",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "砺波市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "碧南市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "神奈川中央交通",
+      "license": "公共交通オープンデータチャレンジ限定ライセンス（チャレンジ応募が前提）",
+      "license_url": "",
+      "feeds": 1
+    },
+    {
+      "holder": "神姫観光",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "神戸市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "神戸市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "神河町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "神津島村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "福岡市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "福崎町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "福津市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "立山町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "立川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "立科町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "笠松町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "筑後市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "築上町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "米子市循環バス(だんだんバス)ほか",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "米沢市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "糸魚川バス株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "紀の川市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "紀宝町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "結城市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "美波町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "美濃加茂市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "羽島市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "船鉄バス(船木鉄道)",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/terms",
+      "feeds": 1
+    },
+    {
+      "holder": "芦屋町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "花巻市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "芸西村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "芸陽バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "苅田町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "若桜町営バス(おにっこバス)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "若狭町営バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "茅ヶ崎市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "草津市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "草軽交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "荒川区",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "菰野町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "葛飾区",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "蒲郡市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "蓬田村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "藤枝市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "行方市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "西川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "西東京バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "西東京市はなバス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "西武バス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "西脇市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "西讃観光",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "観音寺市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "諏訪市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "豊前市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "豊山町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "豊明市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "越前市民バス「のろっさ」",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "越前町コミュニティバス「フレンドリー号」",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "足利市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "軽井沢町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "近江八幡市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "遠賀町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "那珂川町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "那賀町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "那須塩原市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "那須町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "郡上市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "都農町コミュニティバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "酒田市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "野々市市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "野洲市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鏡野町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "長久手市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "長井市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "長浜市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "長野市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "関市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "関東バス",
+      "license": "公共交通オープンデータ基本ライセンス",
+      "license_url": "https://developer.odpt.org/odpt_basic_license",
+      "feeds": 1
+    },
+    {
+      "holder": "阿佐海岸鉄道株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "階上町",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "青木村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鞆鉄道",
+      "license": "CC 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鞍手町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "韮崎市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "須坂市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "須恵町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "飛騨市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "飯山市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "飯島町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "養父市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "香南市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "香取市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "香美町",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "高岡市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高島市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高知東部交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高知県",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高知県航空利用促進協議会",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高知高陵交通株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "高砂市",
+      "license": "CC BY 2.1 JP",
+      "license_url": "https://creativecommons.org/licenses/by/2.1/jp/",
+      "feeds": 1
+    },
+    {
+      "holder": "鮭川村",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鯖江市 つつじバス",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鳥取市コミュニティバス(くる梨ほか)",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鶴岡市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鶴田町",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鹿児島市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "鹿沼市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "黒石市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "黒部市",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "龍ケ崎市",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    },
+    {
+      "holder": "龍神自動車株式会社",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.ja",
+      "feeds": 1
+    }
+  ],
+  "data_sources": [
+    {
+      "name": "令和2年国勢調査 人口及び世帯（JGD2011）",
+      "holder": "政府統計の総合窓口(e-Stat) 統計地理情報システム",
+      "attribution": "出典: 令和2年国勢調査 人口及び世帯（JGD2011）（総務省統計局）を加工して作成",
+      "note": "人口メッシュ"
+    },
+    {
+      "name": "国土数値情報（バス停留所）令和4年度版 国土交通省",
+      "holder": "国土交通省",
+      "attribution": "出典: 国土数値情報（バス停留所）令和4年度版（国土交通省）を加工して作成",
+      "note": "座標を公開していない事業者のバス停位置"
+    }
+  ],
+  "standing": [
+    {
+      "name": "地理院タイル（淡色地図）",
+      "holder": "国土地理院",
+      "url": "https://maps.gsi.go.jp/development/ichiran.html",
+      "note": "背景地図"
+    }
+  ]
+}
