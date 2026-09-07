@@ -893,16 +893,27 @@ function eraChange(series, cell, g) {
   return 0;
 }
 
+// Some revisions are short-lived special timetables that carry no weekday (or
+// no weekend) service at all. Diffed against the baseline every cell reads as
+// withdrawn, and the city floods pink -- a revision with no Saturday in it is
+// not a Saturday with no buses.
+function eraBlank(series, g) {
+  const gen = series.generations[g];
+  return !gen || gen[state.bucket].mean_last_s === null
+    || gen[state.bucket].mean_last_s === undefined;
+}
+
 function drawTimelineLayer() {
   const series = timelineData;
   if (!series) return;
+  const blank = eraBlank(series, state.era);
   const dpr = devicePixelRatio;
   const side = Math.max(2, 0.0045 * state.view.scale) * dpr;
   ctx.save();
   for (const cell of series.cells) {
     const [x, y] = project(cell[1], cell[2]);
     if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
-    const c = eraChange(series, cell, state.era);
+    const c = blank ? 0 : eraChange(series, cell, state.era);
     // Cells that have not moved are still drawn, faintly: without them the
     // reader cannot tell an unchanged network from one that is not covered.
     const [r, g, b] = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER
@@ -925,6 +936,7 @@ function updateTimeline() {
   const series = timelineData;
   const now = series.generations[state.era], first = series.generations[0];
   const mean = now[state.bucket].mean_last_s, base = first[state.bucket].mean_last_s;
+  const blank = eraBlank(series, state.era);
   box.hidden = false;
   $("timelineValue").textContent = mean === null ? "–" : fmt(mean);
   const shift = mean === null || base === null ? null : Math.round((mean - base) / 60);
@@ -941,12 +953,22 @@ function updateTimeline() {
     else if (c > 0) { earlier += pop; weighted += pop * c; }
   }
   const mins = earlier ? Math.round(weighted / earlier / 60) : 0;
-  $("timelineNote").textContent = state.era === 0
+  $("timelineNote").textContent = blank
+    ? `この版に${series.bucket_labels[state.bucket]}のダイヤが入っていない`
+      + `（その曜日だけの臨時版と思われる）。便が消えたわけではない`
+    : state.era === 0
     ? `起点 ${first.date}。停留所 ${first.stops.toLocaleString("ja-JP")}`
     : `起点から: 終発が早まった ${Math.round(earlier).toLocaleString("ja-JP")} 人`
       + `（平均 ${mins} 分） / 便が無くなった ${Math.round(gone).toLocaleString("ja-JP")} 人`
       + ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`;
-  $("timelineCaveat").textContent = series.note || "";
+  // A generation the builder flagged as sitting far off the rest of the series
+  // is named while it is on screen, not left in a file nobody opens.
+  const odd = (series.outliers || []).filter((o) => o.date === now.date);
+  const here = odd.find((o) => o.bucket === state.bucket);
+  $("timelineCaveat").textContent = (here
+    ? `※ この版の${series.bucket_labels[here.bucket]}は系列から外れている`
+      + `（季節ダイヤを代表に採った疑い）。 `
+    : "") + (series.note || "");
   $("eraLabel").innerHTML = `${now.date}<small>${state.era + 1} / `
     + `${series.generations.length} 改正</small>`;
   drawEraCurve();
@@ -1006,6 +1028,21 @@ function drawEraCurve() {
   c.fillText(fmt(lo + 240), 2, h - 22);
 }
 
+// 779 cells in one city are invisible at national zoom, and a reader who
+// pressed 年表 and saw nothing move would reasonably conclude it is broken.
+// The same applies when switching from one operator's series to another's.
+function fitTimeline() {
+  if (!timelineData || !timelineData.cells.length) return;
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  for (const c of timelineData.cells) {
+    if (c[1] < minLat) minLat = c[1];
+    if (c[1] > maxLat) maxLat = c[1];
+    if (c[2] < minLon) minLon = c[2];
+    if (c[2] > maxLon) maxLon = c[2];
+  }
+  fitTo({ minLat, maxLat, minLon, maxLon });
+}
+
 function stopEra() {
   if (eraPlaying) { clearInterval(eraPlaying); eraPlaying = 0; }
   $("eraPlay").textContent = "▶";
@@ -1016,12 +1053,16 @@ function playEra() {
   if (eraPlaying) { stopEra(); return; }
   if (state.era >= timelineData.generations.length - 1) state.era = 0;
   $("eraPlay").textContent = "■";
+  // 22 revisions and 89 revisions should both take about twenty seconds to
+  // play. A fixed step turns the busiest operator into a minute of watching.
+  const step = Math.max(220, Math.min(900,
+    Math.round(20000 / timelineData.generations.length)));
   eraPlaying = setInterval(() => {
     if (!timelineData || state.era >= timelineData.generations.length - 1) { stopEra(); return; }
     state.era += 1;
     $("eraTime").value = state.era;
     render();
-  }, 750);
+  }, step);
 }
 
 /* ---------- basemap ---------- */
@@ -1220,8 +1261,12 @@ function updateReadout(liveStops, servedStops, pop) {
   } else if (state.mode === "timeline") {
     const t = timelineData || {};
     const g = t.generations || [];
+    // The catalogue lists revisions the file API no longer serves. Reporting
+    // only the built ones would overstate how complete the series is.
+    const short = t.missing && t.missing.length
+      ? `（カタログの ${t.listed} 件中 ${t.missing.length} 件は取得できず）` : "";
     $("basis").textContent = g.length
-      ? `${t.label} — ${g.length} 改正ぶん。各版はその改正の施行日で読んでいる`
+      ? `${t.label} — ${g.length} 改正ぶん${short}。各版はその改正の施行日で読んでいる`
       : "保存されている改正を古い順に並べたもの";
   } else if (state.mode === "change") {
     const e = (changeData && changeData.entry) || {};
@@ -1245,7 +1290,9 @@ function updateReadout(liveStops, servedStops, pop) {
     gap: "公共交通が無い時間",
     drop: "休日に失われる足",
     change: "何が変わったか",
-    timeline: "この3年で変わったこと",
+    timeline: timelineData
+      ? `${timelineData.generations[0].date.slice(0, 4)}年からの変化`
+      : "改正を並べる",
   }[state.mode];
   $("scopeCurrent").textContent = scopeName();
   updateGap();
@@ -1591,12 +1638,7 @@ function setMode(mode) {
   if (mode !== "timeline") stopEra();
   // 779 cells in one city are invisible at national zoom, and a reader who
   // pressed 年表 and saw nothing move would reasonably conclude it is broken.
-  if (mode === "timeline" && timelineData) {
-    const lats = timelineData.cells.map((c) => c[1]);
-    const lons = timelineData.cells.map((c) => c[2]);
-    fitTo({ minLat: Math.min(...lats), maxLat: Math.max(...lats),
-            minLon: Math.min(...lons), maxLon: Math.max(...lons) });
-  }
+  if (mode === "timeline") fitTimeline();
   // The gap is a property of the place, not of the moment, so the slider does
   // not move this map. Dimming it beats leaving the reader to drag it and
   // conclude the page is broken.
@@ -1610,7 +1652,9 @@ for (const b of document.querySelectorAll("#modes button")) {
 
 $("timelinePick").onchange = async (e) => {
   stopEra();
+  state.era = 0;
   await loadTimeline(e.currentTarget.value);
+  fitTimeline();
   render();
 };
 
