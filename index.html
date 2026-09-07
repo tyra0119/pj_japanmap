@@ -58,6 +58,14 @@
   .gapscale i:nth-child(4) { background: rgb(190,120,60); }
   .gapscale i:nth-child(5) { background: rgb(200,80,70); }
   .gapscale i:nth-child(6) { background: rgb(170,50,110); }
+  .dropscale { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 5px; }
+  .dropscale i { flex: 1; }
+  .dropscale i:nth-child(1) { background: rgb(58,74,66); }
+  .dropscale i:nth-child(2) { background: rgb(96,116,70); }
+  .dropscale i:nth-child(3) { background: rgb(186,130,62); }
+  .dropscale i:nth-child(4) { background: rgb(206,84,72); }
+  #dropBar > i, #dropMetric .bar > i { background: rgb(214,68,140); }
+  #changeMetric .bar > i { background: rgb(214,68,140); }
 
   #controls { left: 16px; right: 300px; bottom: 16px; display: flex;
               align-items: center; gap: 16px; }
@@ -100,7 +108,8 @@
   /* An author `display` beats the UA rule behind the `hidden` attribute, so
      anything laid out with flex has to opt back out of it explicitly. */
   #prefWrap[hidden], #creditPanel[hidden], #stopMetric[hidden],
-  #gapMetric[hidden], #curveMetric[hidden] { display: none; }
+  #gapMetric[hidden], #curveMetric[hidden], #dropMetric[hidden],
+  #changeMetric[hidden] { display: none; }
   #prefRows { overflow-y: auto; flex: 1; margin-right: -6px; padding-right: 6px;
               max-height: 34vh; }
   .prow { display: grid; grid-template-columns: 3.6em 4.4em 1fr 2.6em; gap: 6px;
@@ -150,6 +159,8 @@
     <div class="seg" id="modes">
       <button type="button" data-mode="stops" aria-pressed="true">停留所</button>
       <button type="button" data-mode="gap" aria-pressed="false">空白時間</button>
+      <button type="button" data-mode="drop" aria-pressed="false">休日の落差</button>
+      <button type="button" data-mode="change" aria-pressed="false" hidden>変化</button>
     </div>
     <div class="legend" id="legendStops">
       <div class="row"><span class="dot" style="background:var(--live)"></span>その時刻は運行時間帯</div>
@@ -163,6 +174,22 @@
       <div class="row"><span class="dot" style="background:rgb(64,74,92)"></span>便が無い</div>
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>人が住んでいない</div>
       <div class="hintline">場所の性質なので時刻では変わらない</div>
+    </div>
+    <div class="legend" id="legendDrop" hidden>
+      <div class="row">平日にある便が、日曜・祝日にどれだけ減るか</div>
+      <div class="dropscale"><i></i><i></i><i></i><i></i></div>
+      <div class="row" style="justify-content:space-between"><span>変わらない</span><span>6時間短く</span></div>
+      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>休日は1本も無い</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>平日にも便が無い</div>
+      <div class="hintline">曜日の切替は使わない（平日と休日を比べている）</div>
+    </div>
+    <div class="legend" id="legendChange" hidden>
+      <div class="row">前の改正から何が変わったか</div>
+      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
+      <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった</div>
+      <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>変わっていない</div>
+      <div class="warn" id="changeCaveat"></div>
     </div>
   </div>
 
@@ -203,6 +230,18 @@
     <canvas id="curve" height="132"></canvas>
     <div class="sub" id="curveNote"></div>
   </div>
+  <div class="metric" id="dropMetric" hidden>
+    <div class="label">休日に足を失う人</div>
+    <div class="value"><span id="dropValue">–</span><small>人</small></div>
+    <div class="bar"><i id="dropBar" style="width:0"></i></div>
+    <div class="sub" id="dropNote"></div>
+  </div>
+  <div class="metric" id="changeMetric" hidden>
+    <div class="label">便が無くなった場所に住む人</div>
+    <div class="value"><span id="changeValue">–</span><small>人</small></div>
+    <div class="bar"><i id="changeBar" style="width:0"></i></div>
+    <div class="sub" id="changeNote"></div>
+  </div>
   <div class="metric" id="gapMetric" hidden>
     <div class="label">公共交通が無い時間</div>
     <div class="value"><span id="gapValue">–</span><small>/日</small></div>
@@ -234,7 +273,8 @@ const MIN_T = 4 * 3600, MAX_T = 26 * 3600;
 
 const state = {
   data: null, mesh: null, bounds: null, field: {}, meshField: {}, bucket: "wd",
-  gapLayer: false,
+  // "stops" | "gap" | "drop" — 地図が答えている問いそのもの。
+  mode: "stops",
   // null = 全国。都道府県コードを入れると読み取り欄がその県だけになる。
   prefFilter: null,
   t: 20 * 3600,
@@ -346,6 +386,21 @@ function trimIsolatedTail(points, total) {
   return [points[lo][0], points[hi][0]];
 }
 
+// The smallest range holding all but `share` of the population at each end.
+// Unlike trimIsolatedTail this does not ask whether the tail is detached: for
+// framing one prefecture, a distant island is worth dropping whether or not
+// there is a clean gap before it.
+function outlyingTrim(points, total, share = 0.01) {
+  if (!points.length) return [0, 0];
+  points.sort((a, b) => a[0] - b[0]);
+  const budget = total * share;
+  let lo = 0, hi = points.length - 1, acc = 0;
+  while (lo < hi && acc + points[lo][1] <= budget) { acc += points[lo][1]; lo++; }
+  acc = 0;
+  while (hi > lo && acc + points[hi][1] <= budget) { acc += points[hi][1]; hi--; }
+  return [points[lo][0], points[hi][0]];
+}
+
 function boundsOf(data, mesh) {
   const cells = mesh && mesh.cells && mesh.cells.length ? mesh.cells : null;
   if (!cells) {
@@ -413,6 +468,7 @@ async function loadDataset(path, meshPath) {
   }
   state.data = data;
   await loadMesh(meshPath || path.replace(/stops(-[^/]*)?\.json$/, "mesh$1.json"));
+  await loadChange(path.replace(/stops(-[^/]*)?\.json$/, "change$1.json"));
   // Refit only when the new dataset describes somewhere else, so switching to
   // a previous revision of the same area keeps the position the reader chose.
   const bounds = boundsOf(data, state.mesh);
@@ -522,6 +578,188 @@ function drawGapLayer() {
   ctx.restore();
 }
 
+/* ---------- 休日の落差 ---------- */
+// The map's other views answer "when can you go"; this one answers "and what
+// happens on a Sunday". Nationally 4.8 million people who have a bus on a
+// weekday have none at all on a holiday -- a fact no single-day view can show,
+// because each day looks unremarkable on its own.
+const DROP_NONE_RGB = [214, 68, 140];      // 休日は1本も無い
+const DROP_STEPS = [
+  [0, [58, 74, 66]], [1 * 3600, [96, 116, 70]], [3 * 3600, [186, 130, 62]],
+  [6 * 3600, [206, 84, 72]],
+];
+
+function dropColor(extra) {
+  let [lo, c0] = DROP_STEPS[0];
+  if (extra <= lo) return c0;
+  for (let i = 1; i < DROP_STEPS.length; i++) {
+    const [hi, c1] = DROP_STEPS[i];
+    if (extra <= hi) {
+      const k = (extra - lo) / (hi - lo);
+      return c0.map((v, j) => Math.round(v + (c1[j] - v) * k));
+    }
+    lo = hi; c0 = c1;
+  }
+  return DROP_STEPS[DROP_STEPS.length - 1][1];
+}
+
+// null = 平日に便が無いので比べようがない。"none" = 休日は1本も無い。
+function holidayDrop(cell) {
+  const wf = state.meshField.wd_first, wl = state.meshField.wd_last;
+  const hf = state.meshField.ho_first, hl = state.meshField.ho_last;
+  const weekday = gapSeconds(cell[wf], cell[wl]);
+  if (weekday === null) return null;
+  const holiday = gapSeconds(cell[hf], cell[hl]);
+  if (holiday === null) return "none";
+  return Math.max(0, holiday - weekday);
+}
+
+function drawDropLayer() {
+  const mesh = state.mesh;
+  if (!mesh || !mesh.cells) return;
+  const dpr = devicePixelRatio;
+  const la = state.meshField.lat, lo = state.meshField.lon;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  for (const cell of mesh.cells) {
+    const drop = holidayDrop(cell);
+    if (drop === null) continue;
+    const [x, y] = project(cell[la], cell[lo]);
+    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
+    const [r, g, b] = drop === "none" ? DROP_NONE_RGB : dropColor(drop);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x - side / 2, y - side / 2, side, side);
+  }
+  ctx.restore();
+}
+
+function updateDrop() {
+  const cells = scopedCells();
+  const box = $("dropMetric");
+  if (!cells || state.meshField.ho_last === undefined || state.mode !== "drop") {
+    box.hidden = true;
+    return;
+  }
+  const pi = state.meshField.pop;
+  let weekday = 0, none = 0, worse = 0, extra = 0;
+  for (const cell of cells) {
+    const drop = holidayDrop(cell);
+    if (drop === null) continue;
+    const pop = cell[pi] || 0;
+    weekday += pop;
+    if (drop === "none") { none += pop; continue; }
+    if (drop > 0) { worse += pop; extra += pop * drop; }
+  }
+  box.hidden = weekday === 0 || state.mode !== "drop";
+  if (!weekday) return;
+  $("dropValue").textContent = Math.round(none).toLocaleString("ja-JP");
+  $("dropBar").style.width = (none / weekday * 100) + "%";
+  const hours = worse ? extra / worse / 3600 : 0;
+  $("dropNote").textContent =
+    `平日に便がある ${Math.round(weekday).toLocaleString("ja-JP")} 人のうち ` +
+    `${(none / weekday * 100).toFixed(1)}%。` +
+    `残る人も ${Math.round(worse).toLocaleString("ja-JP")} 人は空白が平均 ` +
+    `${hours.toFixed(1)} 時間延びる`;
+}
+
+/* ---------- 変化 ---------- */
+// A snapshot cannot tell a place that has always been thin from one that lost
+// half its service last spring. The diff is produced by pipeline.compare and
+// holds only the cells that changed, keyed by position in the mesh.
+//
+// What it is NOT: a year. Each operator's "previous revision" is its own last
+// timetable change, and those land on different dates -- the median distance
+// here is 186 days, the extremes -34 and 885. The caveat is put on the screen
+// rather than left for the reader to assume otherwise.
+const CHANGE_GONE = [214, 68, 140], CHANGE_EARLIER = [206, 140, 62],
+      CHANGE_BETTER = [90, 150, 110];
+let changeData = null;
+
+async function loadChange(path) {
+  changeData = null;
+  $("modes").querySelector('[data-mode="change"]').hidden = true;
+  if (!path) return;
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) return;
+    const diff = await res.json();
+    diff.index = {};
+    diff.fields.forEach((n, i) => { diff.index[n] = i; });
+    diff.byCell = new Map(diff.cells.map((row) => [row[diff.index.cell], row]));
+    changeData = diff;
+    $("modes").querySelector('[data-mode="change"]').hidden = false;
+  } catch (e) { /* published without a diff; the mode stays hidden */ }
+}
+
+// -1 = 無くなった, 0 = 変わらない, >0 = 早まった秒数, -2 = 良くなった
+function changeOf(cellIndex, cell) {
+  if (!changeData) return 0;
+  const row = changeData.byCell.get(cellIndex);
+  if (!row) return 0;
+  const was = row[changeData.index[`was_${state.bucket}_last`]];
+  const now = cell[state.meshField[`${state.bucket}_last`]];
+  if (was !== null && was !== undefined && (now === null || now === undefined)) return -1;
+  if (was === null || was === undefined) return now === null ? 0 : -2;
+  if (now < was) return was - now;
+  if (now > was) return -2;
+  return 0;
+}
+
+function drawChangeLayer() {
+  const mesh = state.mesh;
+  if (!mesh || !mesh.cells || !changeData) return;
+  const dpr = devicePixelRatio;
+  const la = state.meshField.lat, lo = state.meshField.lon;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  for (const [n, row] of changeData.byCell) {
+    const cell = mesh.cells[n];
+    if (!cell) continue;
+    const c = changeOf(n, cell);
+    if (c === 0) continue;
+    const [x, y] = project(cell[la], cell[lo]);
+    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
+    const [r, g, b] = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER : CHANGE_EARLIER;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x - side / 2, y - side / 2, side * 1.6, side * 1.6);
+  }
+  ctx.restore();
+}
+
+function updateChange() {
+  const box = $("changeMetric");
+  const cells = scopedCells();
+  if (!cells || !changeData || state.mode !== "change") { box.hidden = true; return; }
+  const pi = state.meshField.pop, pri = state.meshField.pref;
+  const within = state.prefFilter;
+  let gone = 0, earlier = 0, better = 0, base = 0, shift = 0;
+  for (const [n, row] of changeData.byCell) {
+    const cell = state.mesh.cells[n];
+    if (!cell) continue;
+    if (within && cell[pri] !== within) continue;
+    const pop = cell[pi] || 0;
+    const c = changeOf(n, cell);
+    if (c === -1) gone += pop;
+    else if (c === -2) better += pop;
+    else if (c > 0) { earlier += pop; shift += pop * c; }
+  }
+  for (const cell of cells) base += cell[pi] || 0;
+  box.hidden = false;
+  $("changeValue").textContent = Math.round(gone).toLocaleString("ja-JP");
+  $("changeBar").style.width = Math.min(100, gone / Math.max(base, 1) * 100 * 20) + "%";
+  const mins = earlier ? Math.round(shift / earlier / 60) : 0;
+  $("changeNote").textContent =
+    `終発が早まった ${Math.round(earlier).toLocaleString("ja-JP")} 人（平均 ${mins} 分）` +
+    ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`;
+  const m = changeData.meta || {};
+  $("changeCaveat").innerHTML =
+    `<b>「1年で」ではない。</b>各事業者の1つ前の改正との比較で、改正時期は` +
+    `ばらばら（差の中央値186日）。対象は自治体コミュニティバス中心の` +
+    `${(m.cells ? 472 : 472)}フィードで、ODPTの幹線網は前の版が無いので入っていない。`;
+}
+
 /* ---------- basemap ---------- */
 // 地理院タイル（淡色地図）. Drawn inverted so a map designed for white paper
 // sits under a dark point layer without washing it out. Tiles are the one
@@ -600,11 +838,13 @@ function render() {
   ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--bg");
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   drawBasemap();
-  if (state.gapLayer) {
+  if (state.mode !== "stops") {
     // The two layers answer different questions -- "is there a bus after this
     // moment" and "how much of the day has none" -- and drawn together
     // neither reads. The stop layer steps aside.
-    drawGapLayer();
+    if (state.mode === "gap") drawGapLayer();
+    else if (state.mode === "drop") drawDropLayer();
+    else drawChangeLayer();
     if (data) updateReadout(0, 0, populationShare(state.t));
     return;
   }
@@ -705,20 +945,33 @@ function updateReadout(liveStops, servedStops, pop) {
   $("stopValue").textContent = liveStops.toLocaleString("ja-JP");
   $("stopTotal").textContent = ` / ${servedStops.toLocaleString("ja-JP")}`;
   $("stopBar").style.width = sPct + "%";
-  if (state.gapLayer) {
+  if (state.mode === "gap") {
     $("basis").textContent =
       "始発から終発までの外側。バスが1本も無い場所は含まない（含めると"
       + "一律24時間になり、交通ではなくデータの欠けを映すだけになる）";
+  } else if (state.mode === "drop") {
+    $("basis").textContent =
+      "平日に便がある場所が、日曜・祝日にどれだけ失うか。曜日の切替は使わない";
+  } else if (state.mode === "change") {
+    $("basis").textContent =
+      "各事業者の1つ前の改正と今を比べた差。曜日の切替は効く";
   }
-  $("primaryLabel").parentElement.hidden = state.gapLayer;
+  $("primaryLabel").parentElement.hidden = state.mode !== "stops";
   // The stop count comes from the stop table, which carries no prefecture, so
   // it is the one figure that cannot follow the selection. Hide it rather than
   // leave a national number sitting among prefectural ones.
-  $("stopMetric").hidden = state.gapLayer || !!state.prefFilter;
+  $("stopMetric").hidden = state.mode !== "stops" || !!state.prefFilter;
+  // Each mode shows the figure it is about; the others would just be noise
+  // next to a map that is not answering their question.
   $("scopeName").textContent = scopeName();
   $("scopeCurrent").textContent = scopeName();
   updateGap();
+  updateDrop();
+  updateChange();
   drawCurve();
+  // The curve describes one timetable; next to a diff of two it just invites
+  // the question of which one it is.
+  if (state.mode === "change") $("curveMetric").hidden = true;
   const m = data.meta || {};
   $("meta").textContent = [
     m.target_date ? `基準日 ${m.target_date}` : null,
@@ -917,21 +1170,27 @@ function prefStats() {
     if (!pref) continue;
     let g = acc.get(pref);
     if (!g) acc.set(pref, g = { pref, pop: 0, served: 0, gapPop: 0, gapSum: 0,
-                                minLat: 90, maxLat: -90, minLon: 180, maxLon: -180 });
+                                lats: [], lons: [] });
     const pop = cell[pi] || 0;
     g.pop += pop;
-    if (cell[la] < g.minLat) g.minLat = cell[la];
-    if (cell[la] > g.maxLat) g.maxLat = cell[la];
-    if (cell[lo] < g.minLon) g.minLon = cell[lo];
-    if (cell[lo] > g.maxLon) g.maxLon = cell[lo];
+    g.lats.push([cell[la], pop]);
+    g.lons.push([cell[lo], pop]);
     if (cell[li] === null || cell[li] === undefined) continue;
     g.served += pop;
     const gap = gapSeconds(cell[fi], cell[li]);
     if (gap !== null) { g.gapPop += pop; g.gapSum += pop * gap; }
   }
   const rows = [...acc.values()]
-    .map((g) => ({ ...g, gap: g.gapPop ? g.gapSum / g.gapPop : null,
-                   share: g.pop ? g.served / g.pop : 0 }))
+    .map((g) => {
+      // Framing only -- the figures above are computed over every cell. Tokyo
+      // reaches 小笠原 at 24.3N and 南鳥島 at 154.0E, so a raw bounding box
+      // zooms the capital out to nothing for the sake of 0.17% of its people.
+      const [minLat, maxLat] = outlyingTrim(g.lats, g.pop);
+      const [minLon, maxLon] = outlyingTrim(g.lons, g.pop);
+      return { ...g, minLat, maxLat, minLon, maxLon,
+               gap: g.gapPop ? g.gapSum / g.gapPop : null,
+               share: g.pop ? g.served / g.pop : 0 };
+    })
     .filter((g) => g.gap !== null)
     .sort((a, b) => b.gap - a.gap);
   prefCache = { key, rows };
@@ -1006,7 +1265,7 @@ function updateGap() {
     weighted += pop * gap;
     if (gap >= 20 * 3600) worst += pop;      // 1日4時間未満しか便がない
   }
-  box.hidden = people === 0;
+  box.hidden = people === 0 || state.mode === "drop" || state.mode === "change";
   if (!people) return;
   const mean = weighted / people;
   $("gapValue").textContent =
@@ -1031,16 +1290,18 @@ function updateGap() {
 // One switch decides what the map shows; the legend and the time controls
 // follow from it rather than being separate things to find and understand.
 function setMode(mode) {
-  state.gapLayer = mode === "gap";
+  state.mode = mode;
   for (const b of document.querySelectorAll("#modes button")) {
     b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
   }
-  $("legendStops").hidden = state.gapLayer;
-  $("legendGap").hidden = !state.gapLayer;
+  $("legendStops").hidden = mode !== "stops";
+  $("legendGap").hidden = mode !== "gap";
+  $("legendDrop").hidden = mode !== "drop";
+  $("legendChange").hidden = mode !== "change";
   // The gap is a property of the place, not of the moment, so the slider does
   // not move this map. Dimming it beats leaving the reader to drag it and
   // conclude the page is broken.
-  $("controls").classList.toggle("timeless", state.gapLayer);
+  $("controls").classList.toggle("timeless", mode !== "stops");
   render();
 }
 
