@@ -94,6 +94,8 @@
   .legend { margin-top: 8px; }
   .legend .row { display: flex; align-items: center; gap: 7px; margin-top: 4px; }
   .legend .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  #changePick { width: 100%; margin-bottom: 7px; font-size: 11px; }
+  #changePick[hidden] { display: none; }
   .hintline { margin-top: 7px; color: #6f7d90; font-size: 10px; }
   button.wide { width: 100%; display: flex; justify-content: space-between;
                 align-items: center; background: #131923; border: 1px solid var(--line);
@@ -127,6 +129,18 @@
   /* In the gap view the clock still drives the curve, but it no longer drives
      the map -- dimmed so the difference is visible before it is tried. */
   #controls.timeless #clock, #controls.timeless #time { opacity: .45; }
+  /* 年表は「いつの時刻か」ではなく「いつの改正か」を動かすので、下の帯を
+     そっくり入れ替える。2本のスライダーを並べると、どちらが地図を動かして
+     いるのか押すまで分からない。 */
+  #controls.eras #clock, #controls.eras #time { display: none; }
+  #era { flex: 1; display: flex; align-items: center; gap: 10px; }
+  #era[hidden] { display: none; }
+  #eraPlay { width: 30px; height: 30px; border-radius: 50%; flex: none;
+             font-size: 12px; line-height: 1; }
+  #eraTime { flex: 1; accent-color: var(--warn); height: 4px; }
+  #eraLabel { font-size: 19px; font-variant-numeric: tabular-nums; min-width: 104px; }
+  #eraLabel small { display: block; font-size: 10.5px; color: var(--muted); }
+  #eraCurve { width: 100%; height: 96px; }
   #creditPanel { left: 16px; bottom: 16px; width: 340px; max-height: 62vh;
                  display: flex; flex-direction: column; z-index: 6; font-size: 11px;
                  color: var(--muted); }
@@ -161,6 +175,7 @@
       <button type="button" data-mode="gap" aria-pressed="false">空白時間</button>
       <button type="button" data-mode="drop" aria-pressed="false">休日の落差</button>
       <button type="button" data-mode="change" aria-pressed="false" hidden>変化</button>
+      <button type="button" data-mode="timeline" aria-pressed="false" hidden>年表</button>
     </div>
     <div class="legend" id="legendStops">
       <div class="row"><span class="dot" style="background:var(--live)"></span>その時刻は運行時間帯</div>
@@ -184,12 +199,23 @@
       <div class="hintline">曜日の切替は使わない（平日と休日を比べている）</div>
     </div>
     <div class="legend" id="legendChange" hidden>
-      <div class="row">前の改正から何が変わったか</div>
+      <select id="changePick"></select>
+      <div class="row">何が変わったか</div>
       <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
       <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった</div>
       <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>変わっていない</div>
       <div class="warn" id="changeCaveat"></div>
+    </div>
+    <div class="legend" id="legendTimeline" hidden>
+      <select id="timelinePick"></select>
+      <div class="row">保存されている改正を古い順に並べ、<b>最初の版と比べる</b></div>
+      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
+      <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった（濃いほど大きく、1時間で最濃）</div>
+      <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>最初の版のまま</div>
+      <div class="hintline">下の ▶ で改正を送る。曜日の切替は効く</div>
+      <div class="warn" id="timelineCaveat"></div>
     </div>
   </div>
 
@@ -212,7 +238,7 @@
 </div>
 
 <div class="panel" id="readout">
-  <h1><span id="scopeName">全国</span>で、この時刻に動いている</h1>
+  <h1><span id="scopeName">全国</span>で、<span id="question">この時刻に動いている</span></h1>
   <div class="sub" id="basis">—</div>
   <div class="metric">
     <div class="label" id="primaryLabel">人口カバー率</div>
@@ -242,6 +268,12 @@
     <div class="bar"><i id="changeBar" style="width:0"></i></div>
     <div class="sub" id="changeNote"></div>
   </div>
+  <div class="metric" id="timelineMetric" hidden>
+    <div class="label">終発の人口加重平均</div>
+    <div class="value"><span id="timelineValue">–</span><small id="timelineShift"></small></div>
+    <canvas id="eraCurve" height="192"></canvas>
+    <div class="sub" id="timelineNote"></div>
+  </div>
   <div class="metric" id="gapMetric" hidden>
     <div class="label">公共交通が無い時間</div>
     <div class="value"><span id="gapValue">–</span><small>/日</small></div>
@@ -262,6 +294,11 @@
 <div class="panel" id="controls">
   <div id="clock">--:--<small id="daylabel">平日</small></div>
   <input id="time" type="range" min="14400" max="93600" step="300" value="72000">
+  <div id="era" hidden>
+    <button id="eraPlay" type="button" aria-label="改正を順に送る">▶</button>
+    <div id="eraLabel">----<small>改正日</small></div>
+    <input id="eraTime" type="range" min="0" max="1" step="1" value="0">
+  </div>
   <div class="seg" id="buckets"></div>
   <select id="dataset"></select>
 </div>
@@ -278,6 +315,8 @@ const state = {
   // null = 全国。都道府県コードを入れると読み取り欄がその県だけになる。
   prefFilter: null,
   t: 20 * 3600,
+  // 年表モードで見ている改正の番号（0 = 最も古い版）
+  era: 0,
   view: { lat: 36.5, lon: 137.5, scale: 55 },  // scale = px per degree of longitude
   hover: -1,
 };
@@ -468,7 +507,8 @@ async function loadDataset(path, meshPath) {
   }
   state.data = data;
   await loadMesh(meshPath || path.replace(/stops(-[^/]*)?\.json$/, "mesh$1.json"));
-  await loadChange(path.replace(/stops(-[^/]*)?\.json$/, "change$1.json"));
+  await loadChangeList();
+  await loadTimelineList();
   // Refit only when the new dataset describes somewhere else, so switching to
   // a previous revision of the same area keeps the position the reader chose.
   const bounds = boundsOf(data, state.mesh);
@@ -676,9 +716,28 @@ const CHANGE_GONE = [214, 68, 140], CHANGE_EARLIER = [206, 140, 62],
       CHANGE_BETTER = [90, 150, 110];
 let changeData = null;
 
+let changeList = [];
+
+async function loadChangeList() {
+  changeList = [];
+  try {
+    const res = await fetch("changes.json", { cache: "no-store" });
+    if (res.ok) changeList = await res.json();
+  } catch (e) { /* published without comparisons */ }
+  const select = $("changePick");
+  select.innerHTML = "";
+  for (const c of changeList) {
+    const opt = document.createElement("option");
+    opt.value = c.path; opt.textContent = c.label;
+    select.appendChild(opt);
+  }
+  select.hidden = changeList.length < 2;
+  $("modes").querySelector('[data-mode="change"]').hidden = changeList.length === 0;
+  if (changeList.length) await loadChange(changeList[0].path);
+}
+
 async function loadChange(path) {
   changeData = null;
-  $("modes").querySelector('[data-mode="change"]').hidden = true;
   if (!path) return;
   try {
     const res = await fetch(path, { cache: "no-store" });
@@ -687,20 +746,21 @@ async function loadChange(path) {
     diff.index = {};
     diff.fields.forEach((n, i) => { diff.index[n] = i; });
     diff.byCell = new Map(diff.cells.map((row) => [row[diff.index.cell], row]));
+    diff.entry = changeList.find((c) => c.path === path) || {};
     changeData = diff;
-    $("modes").querySelector('[data-mode="change"]').hidden = false;
-  } catch (e) { /* published without a diff; the mode stays hidden */ }
+  } catch (e) { /* leave the mode without data rather than half of it */ }
 }
 
 // -1 = 無くなった, 0 = 変わらない, >0 = 早まった秒数, -2 = 良くなった
-function changeOf(cellIndex, cell) {
-  if (!changeData) return 0;
-  const row = changeData.byCell.get(cellIndex);
-  if (!row) return 0;
+//
+// Both sides come from the diff. Taking "now" from the loaded mesh would mix
+// in operators the comparison never covered.
+function changeOf(row) {
   const was = row[changeData.index[`was_${state.bucket}_last`]];
-  const now = cell[state.meshField[`${state.bucket}_last`]];
-  if (was !== null && was !== undefined && (now === null || now === undefined)) return -1;
-  if (was === null || was === undefined) return now === null ? 0 : -2;
+  const now = row[changeData.index[`now_${state.bucket}_last`]];
+  const missing = (v) => v === null || v === undefined;
+  if (!missing(was) && missing(now)) return -1;
+  if (missing(was)) return missing(now) ? 0 : -2;
   if (now < was) return was - now;
   if (now > was) return -2;
   return 0;
@@ -717,7 +777,7 @@ function drawChangeLayer() {
   for (const [n, row] of changeData.byCell) {
     const cell = mesh.cells[n];
     if (!cell) continue;
-    const c = changeOf(n, cell);
+    const c = changeOf(row);
     if (c === 0) continue;
     const [x, y] = project(cell[la], cell[lo]);
     if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
@@ -740,24 +800,228 @@ function updateChange() {
     if (!cell) continue;
     if (within && cell[pri] !== within) continue;
     const pop = cell[pi] || 0;
-    const c = changeOf(n, cell);
+    const c = changeOf(row);
     if (c === -1) gone += pop;
     else if (c === -2) better += pop;
     else if (c > 0) { earlier += pop; shift += pop * c; }
   }
   for (const cell of cells) base += cell[pi] || 0;
   box.hidden = false;
-  $("changeValue").textContent = Math.round(gone).toLocaleString("ja-JP");
-  $("changeBar").style.width = Math.min(100, gone / Math.max(base, 1) * 100 * 20) + "%";
+  // When nothing was withdrawn, the headline is the hours that moved instead.
+  // Leading with a zero would read as "nothing happened" when 264,213 people
+  // lost an hour of their evening.
+  const led = gone > 0;
+  $("changeMetric").querySelector(".label").textContent =
+    led ? "便が無くなった場所に住む人" : "終発が早まった場所に住む人";
+  $("changeValue").textContent =
+    Math.round(led ? gone : earlier).toLocaleString("ja-JP");
+  $("changeBar").style.width =
+    Math.min(100, (led ? gone : earlier) / Math.max(base, 1) * 100 * 20) + "%";
   const mins = earlier ? Math.round(shift / earlier / 60) : 0;
-  $("changeNote").textContent =
-    `終発が早まった ${Math.round(earlier).toLocaleString("ja-JP")} 人（平均 ${mins} 分）` +
-    ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`;
-  const m = changeData.meta || {};
-  $("changeCaveat").innerHTML =
-    `<b>「1年で」ではない。</b>各事業者の1つ前の改正との比較で、改正時期は` +
-    `ばらばら（差の中央値186日）。対象は自治体コミュニティバス中心の` +
-    `${(m.cells ? 472 : 472)}フィードで、ODPTの幹線網は前の版が無いので入っていない。`;
+  $("changeNote").textContent = led
+    ? `終発が早まった ${Math.round(earlier).toLocaleString("ja-JP")} 人（平均 ${mins} 分）`
+      + ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`
+    : `平均 ${mins} 分。便が無くなった場所は無い`
+      + ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`;
+  $("changeCaveat").textContent = (changeData.entry || {}).note || "";
+}
+
+/* ---------- 年表 ---------- */
+// A diff is two points and cannot tell a trend from one bad revision. Where an
+// operator's past revisions are all still published, the same measurement can
+// be repeated on each of them and played in order.
+//
+// The map colours each cell against the *first* generation rather than by its
+// absolute last-bus time: the whole movement over three years is about a
+// quarter of an hour, which no absolute colour scale would show. What the
+// reader sees appearing is the difference itself.
+let timelineList = [];
+let timelineData = null;
+let eraPlaying = 0;
+
+async function loadTimelineList() {
+  timelineList = [];
+  try {
+    const res = await fetch("timelines.json", { cache: "no-store" });
+    if (res.ok) timelineList = await res.json();
+  } catch (e) { /* published without a series */ }
+  const select = $("timelinePick");
+  select.innerHTML = "";
+  for (const t of timelineList) {
+    const opt = document.createElement("option");
+    opt.value = t.path; opt.textContent = t.label;
+    select.appendChild(opt);
+  }
+  select.hidden = timelineList.length < 2;
+  $("modes").querySelector('[data-mode="timeline"]').hidden = timelineList.length === 0;
+  if (timelineList.length) await loadTimeline(timelineList[0].path);
+}
+
+async function loadTimeline(path) {
+  timelineData = null;
+  if (!path) return;
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) return;
+    const series = await res.json();
+    series.width = series.buckets.length * 2;
+    series.head = series.fields.length;          // cell, lat, lon, pop
+    series.entry = timelineList.find((t) => t.path === path) || {};
+    timelineData = series;
+    state.era = Math.min(state.era, series.generations.length - 1);
+    const slider = $("eraTime");
+    slider.max = series.generations.length - 1;
+    slider.value = state.era;
+  } catch (e) { /* leave the mode without data rather than half of it */ }
+}
+
+// [first, last] for `cell` in generation `g` under the selected day type.
+function eraTimes(series, cell, g) {
+  const k = series.buckets.indexOf(state.bucket);
+  const at = series.head + g * series.width + k * 2;
+  return [cell[at], cell[at + 1]];
+}
+
+function eraChange(series, cell, g) {
+  const was = eraTimes(series, cell, 0)[1];
+  const now = eraTimes(series, cell, g)[1];
+  const missing = (v) => v === null || v === undefined;
+  if (!missing(was) && missing(now)) return -1;
+  if (missing(was)) return missing(now) ? 0 : -2;
+  if (now < was) return was - now;
+  if (now > was) return -2;
+  return 0;
+}
+
+function drawTimelineLayer() {
+  const series = timelineData;
+  if (!series) return;
+  const dpr = devicePixelRatio;
+  const side = Math.max(2, 0.0045 * state.view.scale) * dpr;
+  ctx.save();
+  for (const cell of series.cells) {
+    const [x, y] = project(cell[1], cell[2]);
+    if (x < -side || y < -side || x > canvas.width + side || y > canvas.height + side) continue;
+    const c = eraChange(series, cell, state.era);
+    // Cells that have not moved are still drawn, faintly: without them the
+    // reader cannot tell an unchanged network from one that is not covered.
+    const [r, g, b] = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER
+                    : c > 0 ? CHANGE_EARLIER : [120, 134, 156];
+    // A minute and an hour are not the same loss. Flat colour paints the whole
+    // city the moment any bus moves at all, which overstates it -- the shade
+    // carries the size, saturating at an hour.
+    ctx.globalAlpha = c === 0 ? 0.28
+                    : c > 0 ? 0.3 + 0.62 * Math.min(1, c / 3600)
+                    : 0.92;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x - side / 2, y - side / 2, side * 1.6, side * 1.6);
+  }
+  ctx.restore();
+}
+
+function updateTimeline() {
+  const box = $("timelineMetric");
+  if (!timelineData || state.mode !== "timeline") { box.hidden = true; return; }
+  const series = timelineData;
+  const now = series.generations[state.era], first = series.generations[0];
+  const mean = now[state.bucket].mean_last_s, base = first[state.bucket].mean_last_s;
+  box.hidden = false;
+  $("timelineValue").textContent = mean === null ? "–" : fmt(mean);
+  const shift = mean === null || base === null ? null : Math.round((mean - base) / 60);
+  $("timelineShift").textContent = shift === null || state.era === 0 ? ""
+    : shift === 0 ? " 起点と同じ"
+    : shift < 0 ? ` ${-shift}分 早い` : ` ${shift}分 遅い`;
+
+  let gone = 0, earlier = 0, better = 0, weighted = 0;
+  for (const cell of series.cells) {
+    const pop = cell[3] || 0;
+    const c = eraChange(series, cell, state.era);
+    if (c === -1) gone += pop;
+    else if (c === -2) better += pop;
+    else if (c > 0) { earlier += pop; weighted += pop * c; }
+  }
+  const mins = earlier ? Math.round(weighted / earlier / 60) : 0;
+  $("timelineNote").textContent = state.era === 0
+    ? `起点 ${first.date}。停留所 ${first.stops.toLocaleString("ja-JP")}`
+    : `起点から: 終発が早まった ${Math.round(earlier).toLocaleString("ja-JP")} 人`
+      + `（平均 ${mins} 分） / 便が無くなった ${Math.round(gone).toLocaleString("ja-JP")} 人`
+      + ` / 遅くなった・増えた ${Math.round(better).toLocaleString("ja-JP")} 人`;
+  $("timelineCaveat").textContent = series.note || "";
+  $("eraLabel").innerHTML = `${now.date}<small>${state.era + 1} / `
+    + `${series.generations.length} 改正</small>`;
+  drawEraCurve();
+}
+
+// The revisions are 7 days to 5 months apart, so they are plotted on a real
+// date axis. Spacing them evenly would turn "one step in April 2024" into a
+// gentle slope, which is the opposite of what happened.
+function drawEraCurve() {
+  const cv = $("eraCurve"), series = timelineData;
+  if (!cv || !series) return;
+  const dpr = devicePixelRatio;
+  const w = cv.clientWidth || 300, h = 96;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const c = cv.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, w, h);
+
+  const gens = series.generations;
+  const xs = gens.map((g) => Date.parse(g.date));
+  const ys = gens.map((g) => g[state.bucket].mean_last_s);
+  const known = ys.filter((v) => v !== null && v !== undefined);
+  if (known.length < 2) return;
+  const x0 = xs[0], x1 = xs[xs.length - 1];
+  const lo = Math.min(...known) - 240, hi = Math.max(...known) + 240;
+  const px = (v) => 4 + (w - 8) * (v - x0) / Math.max(1, x1 - x0);
+  const py = (v) => h - 16 - (h - 24) * (v - lo) / Math.max(1, hi - lo);
+
+  c.strokeStyle = "rgba(150,166,190,0.25)";
+  c.beginPath(); c.moveTo(0, h - 16); c.lineTo(w, h - 16); c.stroke();
+
+  c.strokeStyle = "rgb(206,140,62)";
+  c.lineWidth = 1.6;
+  c.beginPath();
+  let started = false;
+  gens.forEach((g, i) => {
+    if (ys[i] === null || ys[i] === undefined) return;
+    const X = px(xs[i]), Y = py(ys[i]);
+    started ? c.lineTo(X, Y) : c.moveTo(X, Y);
+    started = true;
+  });
+  c.stroke();
+
+  gens.forEach((g, i) => {
+    if (ys[i] === null || ys[i] === undefined) return;
+    const X = px(xs[i]), Y = py(ys[i]);
+    c.fillStyle = i === state.era ? "rgb(232,232,236)" : "rgba(206,140,62,0.55)";
+    c.beginPath(); c.arc(X, Y, i === state.era ? 3.4 : 1.8, 0, 6.284); c.fill();
+  });
+
+  c.fillStyle = "rgba(150,166,190,0.85)";
+  c.font = "10px system-ui, sans-serif";
+  c.fillText(gens[0].date.slice(0, 7), 2, h - 4);
+  const lastLabel = gens[gens.length - 1].date.slice(0, 7);
+  c.fillText(lastLabel, w - c.measureText(lastLabel).width - 2, h - 4);
+  c.fillText(fmt(hi - 240), 2, 10);
+  c.fillText(fmt(lo + 240), 2, h - 22);
+}
+
+function stopEra() {
+  if (eraPlaying) { clearInterval(eraPlaying); eraPlaying = 0; }
+  $("eraPlay").textContent = "▶";
+}
+
+function playEra() {
+  if (!timelineData) return;
+  if (eraPlaying) { stopEra(); return; }
+  if (state.era >= timelineData.generations.length - 1) state.era = 0;
+  $("eraPlay").textContent = "■";
+  eraPlaying = setInterval(() => {
+    if (!timelineData || state.era >= timelineData.generations.length - 1) { stopEra(); return; }
+    state.era += 1;
+    $("eraTime").value = state.era;
+    render();
+  }, 750);
 }
 
 /* ---------- basemap ---------- */
@@ -844,6 +1108,7 @@ function render() {
     // neither reads. The stop layer steps aside.
     if (state.mode === "gap") drawGapLayer();
     else if (state.mode === "drop") drawDropLayer();
+    else if (state.mode === "timeline") drawTimelineLayer();
     else drawChangeLayer();
     if (data) updateReadout(0, 0, populationShare(state.t));
     return;
@@ -952,9 +1217,17 @@ function updateReadout(liveStops, servedStops, pop) {
   } else if (state.mode === "drop") {
     $("basis").textContent =
       "平日に便がある場所が、日曜・祝日にどれだけ失うか。曜日の切替は使わない";
+  } else if (state.mode === "timeline") {
+    const t = timelineData || {};
+    const g = t.generations || [];
+    $("basis").textContent = g.length
+      ? `${t.label} — ${g.length} 改正ぶん。各版はその改正の施行日で読んでいる`
+      : "保存されている改正を古い順に並べたもの";
   } else if (state.mode === "change") {
-    $("basis").textContent =
-      "各事業者の1つ前の改正と今を比べた差。曜日の切替は効く";
+    const e = (changeData && changeData.entry) || {};
+    $("basis").textContent = e.label
+      ? `${e.label} — 曜日の切替は効く`
+      : "2つの版を比べた差。曜日の切替は効く";
   }
   $("primaryLabel").parentElement.hidden = state.mode !== "stops";
   // The stop count comes from the stop table, which carries no prefecture, so
@@ -963,15 +1236,28 @@ function updateReadout(liveStops, servedStops, pop) {
   $("stopMetric").hidden = state.mode !== "stops" || !!state.prefFilter;
   // Each mode shows the figure it is about; the others would just be noise
   // next to a map that is not answering their question.
-  $("scopeName").textContent = scopeName();
+  // The series is one operator's own area; the prefecture selection has no
+  // hold over it, so it names itself rather than borrowing the national scope.
+  $("scopeName").textContent = state.mode === "timeline" && timelineData
+    ? timelineData.label : scopeName();
+  $("question").textContent = {
+    stops: "この時刻に動いている",
+    gap: "公共交通が無い時間",
+    drop: "休日に失われる足",
+    change: "何が変わったか",
+    timeline: "この3年で変わったこと",
+  }[state.mode];
   $("scopeCurrent").textContent = scopeName();
   updateGap();
   updateDrop();
   updateChange();
+  updateTimeline();
   drawCurve();
   // The curve describes one timetable; next to a diff of two it just invites
   // the question of which one it is.
-  if (state.mode === "change") $("curveMetric").hidden = true;
+  if (state.mode === "change" || state.mode === "timeline") {
+    $("curveMetric").hidden = true;
+  }
   const m = data.meta || {};
   $("meta").textContent = [
     m.target_date ? `基準日 ${m.target_date}` : null,
@@ -1265,7 +1551,8 @@ function updateGap() {
     weighted += pop * gap;
     if (gap >= 20 * 3600) worst += pop;      // 1日4時間未満しか便がない
   }
-  box.hidden = people === 0 || state.mode === "drop" || state.mode === "change";
+  box.hidden = people === 0 || state.mode === "drop" || state.mode === "change"
+    || state.mode === "timeline";
   if (!people) return;
   const mean = weighted / people;
   $("gapValue").textContent =
@@ -1298,16 +1585,47 @@ function setMode(mode) {
   $("legendGap").hidden = mode !== "gap";
   $("legendDrop").hidden = mode !== "drop";
   $("legendChange").hidden = mode !== "change";
+  $("legendTimeline").hidden = mode !== "timeline";
+  $("era").hidden = mode !== "timeline";
+  $("controls").classList.toggle("eras", mode === "timeline");
+  if (mode !== "timeline") stopEra();
+  // 779 cells in one city are invisible at national zoom, and a reader who
+  // pressed 年表 and saw nothing move would reasonably conclude it is broken.
+  if (mode === "timeline" && timelineData) {
+    const lats = timelineData.cells.map((c) => c[1]);
+    const lons = timelineData.cells.map((c) => c[2]);
+    fitTo({ minLat: Math.min(...lats), maxLat: Math.max(...lats),
+            minLon: Math.min(...lons), maxLon: Math.max(...lons) });
+  }
   // The gap is a property of the place, not of the moment, so the slider does
   // not move this map. Dimming it beats leaving the reader to drag it and
   // conclude the page is broken.
-  $("controls").classList.toggle("timeless", mode !== "stops");
+  $("controls").classList.toggle("timeless", mode !== "stops" && mode !== "timeline");
   render();
 }
 
 for (const b of document.querySelectorAll("#modes button")) {
   b.onclick = () => setMode(b.dataset.mode);
 }
+
+$("timelinePick").onchange = async (e) => {
+  stopEra();
+  await loadTimeline(e.currentTarget.value);
+  render();
+};
+
+$("eraTime").addEventListener("input", (e) => {
+  stopEra();
+  state.era = Number(e.target.value);
+  render();
+});
+
+$("eraPlay").onclick = playEra;
+
+$("changePick").onchange = async (e) => {
+  await loadChange(e.currentTarget.value);
+  render();
+};
 
 /* ---------- interaction ---------- */
 $("time").addEventListener("input", (e) => {
