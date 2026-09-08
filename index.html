@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<!-- これが無いと、スマホは幅980〜1471pxの仮想画面として描画し、
+     文字は読めない大きさに縮み、キャンバスは画面の何倍もの画素数になる。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>全国バス運行時間マップ</title>
 <style>
   :root {
@@ -23,7 +26,7 @@
     font: 13px/1.5 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
     overflow: hidden;
   }
-  #map { position: absolute; inset: 0; cursor: grab; }
+  #map { position: absolute; inset: 0; cursor: grab; touch-action: none; }
   /* データ層は WebGL の別キャンバス。タイルの上、パネルの下。 */
   #gl { position: absolute; inset: 0; pointer-events: none; }
   #map.dragging { cursor: grabbing; }
@@ -162,6 +165,50 @@
          white-space: nowrap; z-index: 5; line-height: 1.5; }
   #tip .tsub { color: var(--muted); font-size: 10.5px; }
   #status { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
+
+  /* ---------- 狭い画面 ---------- */
+  /* パネルを左右に置くと 262+268=530px 必要で、スマホの幅に入らない。
+     上に読み取り、下に操作を置き、詳細は畳んでおく。 */
+  .more { display: none; background: none; border: 1px solid var(--line);
+          color: var(--muted); border-radius: 5px; padding: 3px 9px;
+          font: inherit; font-size: 10.5px; cursor: pointer; margin-top: 8px; }
+  @media (max-width: 720px) {
+    #controlPanel { left: 8px; right: 8px; width: auto; top: auto;
+                    bottom: calc(8px + env(safe-area-inset-bottom));
+                    max-height: 52vh; padding: 9px 11px; }
+    #controlPanel > b, #controlPanel > .sub { display: none; }
+    #controlPanel .ctl { margin-top: 0; padding-top: 0; border-top: 0; }
+    #readout { left: 8px; right: 8px; width: auto;
+               top: calc(8px + env(safe-area-inset-top)); max-height: 44vh;
+               overflow-y: auto; padding: 9px 11px; }
+    /* 下の2枚（操作パネルと時刻の帯）は入れ物に積む。高さを測って bottom を
+       計算する手もあるが、スマホでは innerHeight と実際に見えている高さが
+       ずれるので、積むのは CSS に任せる。 */
+    #bottomStack { position: fixed; left: 8px; right: 8px; z-index: 4;
+                   bottom: calc(8px + env(safe-area-inset-bottom));
+                   display: flex; flex-direction: column; gap: 8px; }
+    #bottomStack > #controlPanel, #bottomStack > #controls {
+      position: static; left: auto; right: auto; top: auto; bottom: auto;
+      width: auto; margin: 0; }
+    #controls { flex-wrap: wrap; gap: 9px 12px; }
+    #hint { display: none; }
+    #creditPanel { left: 8px; right: 8px; width: auto; bottom: 8px; }
+    .more { display: block; }
+    /* 畳んでいる間は、モードの切替と時刻だけ見えていればよい */
+    body:not(.more-open) #controlPanel .legend,
+    body:not(.more-open) #controlPanel .ctl.grow,
+    body:not(.more-open) #controlPanel .foot { display: none; }
+    body:not(.more-open) #readout .metric:not(#primaryMetric),
+    body:not(.more-open) #readout .note,
+    body:not(.more-open) #readout .why { display: none; }
+    #clock { font-size: 22px; min-width: 76px; }
+    #eraLabel { font-size: 15px; min-width: 88px; }
+  }
+  /* 縦が短い横向きでも、地図が潰れないように */
+  @media (max-height: 520px) {
+    #controlPanel { max-height: 40vh; }
+    #readout { max-height: 40vh; }
+  }
 </style>
 </head>
 <body>
@@ -249,12 +296,13 @@
   </div>
 
   <div class="foot"><button id="creditToggle" type="button">出典とライセンス</button></div>
+  <button class="more" id="moreToggle" type="button" aria-expanded="false">詳しく</button>
 </div>
 
 <div class="panel" id="readout">
   <h1><span id="scopeName">全国</span>で、<span id="question">この時刻に動いている</span></h1>
   <div class="sub" id="basis">—</div>
-  <div class="metric">
+  <div class="metric" id="primaryMetric">
     <div class="label" id="primaryLabel">人口カバー率</div>
     <div class="value"><span id="primaryValue">–</span><small>%</small></div>
     <div class="bar"><i id="primaryBar" style="width:0"></i></div>
@@ -297,6 +345,7 @@
   <div class="note" id="meta"></div>
 </div>
 
+<div id="bottomStack"></div>
 <div id="hint">ドラッグで移動 / ホイールで拡大縮小</div>
 
 <div class="panel" id="creditPanel" hidden>
@@ -371,6 +420,17 @@ function fitClock() {
 // 変わる）。
 let DPR = 1;
 function readDpr() { DPR = Math.min(devicePixelRatio || 1, 1.5); }
+
+// 画面の大きさは innerWidth ではなく documentElement から取る。スマホでは
+// innerWidth がスクロールバーや実画素の都合でずれることがあり、キャンバスが
+// 見えている範囲より大きくなって、下の帯が画面外に落ちる。
+function viewport() {
+  const el = document.documentElement;
+  return { w: el.clientWidth || innerWidth, h: el.clientHeight || innerHeight };
+}
+
+// 狭い画面かどうか。CSS と同じ境目を JS からも見る。
+const narrow = matchMedia("(max-width: 720px)");
 readDpr();
 
 const state = {
@@ -541,45 +601,71 @@ async function loadMesh(entry) {
 // stops include バスタ新宿, 東京八重洲 and 梅田 -- and nine such stops stretch
 // the bounds across half the country, shrinking the place the readout is
 // actually about into a corner. The cells are that place, by definition.
+//
+// 500m メッシュは規則正しい格子（緯度 1/240°、経度 1/160°）に乗っている。
+// 座標と人口の組を46万個作って並べ替えると、画角を決めるだけで 214ms かかり、
+// 百万個近い配列を作ることになる（スマホではここが数秒になる）。目盛りごとに
+// 人口を足した表を作れば、端の判定は数千個の表を舐めるだけで済む。
+function popByBin(values, pops, idx, perDeg) {
+  const n = idx ? idx.length : values.length;
+  const bin = (i) => Math.round(values[i] * perDeg - 0.5);
+  let lo = Infinity, hi = -Infinity;
+  for (let k = 0; k < n; k++) {
+    const b = bin(idx ? idx[k] : k);
+    if (b < lo) lo = b;
+    if (b > hi) hi = b;
+  }
+  if (lo > hi) return null;
+  const counts = new Float64Array(hi - lo + 1);
+  let total = 0;
+  for (let k = 0; k < n; k++) {
+    const i = idx ? idx[k] : k;
+    counts[bin(i) - lo] += pops[i];
+    total += pops[i];
+  }
+  return { counts, lo, total, value: (j) => (j + lo + 0.5) / perDeg };
+}
+
 // Trim an end of the range only when a big empty gap separates it from the
 // rest and almost nobody lives beyond that gap. 南鳥島 is 1,800 km east of
 // anything with nine residents on it; framing the country so those nine fit
 // costs everyone else 40% of the zoom. 小笠原 is nearer and larger, and stays.
-function trimIsolatedTail(points, total) {
-  points.sort((a, b) => a[0] - b[0]);
-  let lo = 0, hi = points.length - 1;
-  const span = () => points[hi][0] - points[lo][0];
+function trimIsolated(h) {
+  const occ = [];
+  for (let i = 0; i < h.counts.length; i++) if (h.counts[i] > 0) occ.push(i);
+  if (!occ.length) return [0, 0];
+  let lo = 0, hi = occ.length - 1;
+  const at = (k) => h.value(occ[k]);
+  const span = () => at(hi) - at(lo);
   const step = (from, dir) => {
-    let pop = 0;
-    let i = from;
+    let pop = 0, i = from;
     while (i !== (dir > 0 ? hi : lo)) {
-      pop += points[i][1];
-      if (pop > total * 0.0005) return from;      // not a rounding error of a place
-      const gap = Math.abs(points[i + dir][0] - points[i][0]);
-      if (gap > span() * 0.2) return i + dir;     // ...and genuinely detached
+      pop += h.counts[occ[i]];
+      if (pop > h.total * 0.0005) return from;   // not a rounding error of a place
+      if (Math.abs(at(i + dir) - at(i)) > span() * 0.2) return i + dir;  // ...and detached
       i += dir;
     }
     return from;
   };
   lo = step(lo, +1);
   hi = step(hi, -1);
-  return [points[lo][0], points[hi][0]];
+  return [at(lo), at(hi)];
 }
 
 // The smallest range holding all but `share` of the population at each end.
-// Unlike trimIsolatedTail this does not ask whether the tail is detached: for
+// Unlike trimIsolated this does not ask whether the tail is detached: for
 // framing one prefecture, a distant island is worth dropping whether or not
 // there is a clean gap before it.
-function outlyingTrim(points, total, share = 0.01) {
-  if (!points.length) return [0, 0];
-  points.sort((a, b) => a[0] - b[0]);
-  const budget = total * share;
-  let lo = 0, hi = points.length - 1, acc = 0;
-  while (lo < hi && acc + points[lo][1] <= budget) { acc += points[lo][1]; lo++; }
+function trimOutlying(h, share = 0.01) {
+  const budget = h.total * share;
+  let lo = 0, hi = h.counts.length - 1, acc = 0;
+  while (lo < hi && acc + h.counts[lo] <= budget) { acc += h.counts[lo]; lo++; }
   acc = 0;
-  while (hi > lo && acc + points[hi][1] <= budget) { acc += points[hi][1]; hi--; }
-  return [points[lo][0], points[hi][0]];
+  while (hi > lo && acc + h.counts[hi] <= budget) { acc += h.counts[hi]; hi--; }
+  return [h.value(lo), h.value(hi)];
 }
+
+const LAT_PER_DEG = 240, LON_PER_DEG = 160;   // 500m メッシュの目盛り
 
 function boundsOf(data, mesh) {
   if (!mesh || !mesh.n) {
@@ -593,17 +679,11 @@ function boundsOf(data, mesh) {
     }
     return minLat > maxLat ? null : { minLat, maxLat, minLon, maxLon };
   }
-  const lats = [], lons = [];
-  let total = 0;
-  for (let i = 0; i < mesh.n; i++) {
-    const pop = mesh.pop[i];
-    total += pop;
-    lats.push([mesh.lat[i], pop]);
-    lons.push([mesh.lon[i], pop]);
-  }
-  if (!lats.length) return null;
-  const [minLat, maxLat] = trimIsolatedTail(lats, total);
-  const [minLon, maxLon] = trimIsolatedTail(lons, total);
+  const latH = popByBin(mesh.lat, mesh.pop, null, LAT_PER_DEG);
+  const lonH = popByBin(mesh.lon, mesh.pop, null, LON_PER_DEG);
+  if (!latH || !lonH) return null;
+  const [minLat, maxLat] = trimIsolated(latH);
+  const [minLon, maxLon] = trimIsolated(lonH);
   return { minLat, maxLat, minLon, maxLon };
 }
 
@@ -618,14 +698,35 @@ function samePlace(a, b) {
     .every((k) => Math.abs(a[k] - b[k]) < span * 0.05);
 }
 
+// 地図が見えているのは、上下のパネルに挟まれた帯だけ。キャンバスの中心に
+// 合わせると、国がパネルの裏に隠れる。
+function visibleBand() {
+  const vp = viewport();
+  if (!narrow.matches) return { top: 0, bottom: vp.h };
+  const top = $("readout").getBoundingClientRect().bottom;
+  const stack = $("bottomStack").getBoundingClientRect();
+  const bottom = stack.height ? stack.top : vp.h;
+  return (bottom - top > 120) ? { top, bottom } : { top: 0, bottom: vp.h };
+}
+
 function fitTo(b) {
   const y0 = mercY(b.minLat), y1 = mercY(b.maxLat);
-  const lat = mercLat((y0 + y1) / 2), lon = (b.minLon + b.maxLon) / 2;
-  // Fit into what the panels leave, not into the whole window.
-  const w = Math.max(160, innerWidth - 320), h = Math.max(160, innerHeight - 220);
-  const scale = Math.min(w / Math.max(b.maxLon - b.minLon, 1e-4),
-                         h / Math.max(y1 - y0, 1e-4));
-  state.view = { lat, lon, scale: Math.max(8, Math.min(60000, scale)) };
+  let lat = mercLat((y0 + y1) / 2);
+  const lon = (b.minLon + b.maxLon) / 2;
+  // Fit into what the panels leave, not into the whole window. On a phone the
+  // panels are stacked above and below instead of at the sides, so taking 320px
+  // off the width would leave a 55px box and zoom the country to a speck.
+  const vp = viewport();
+  const band = visibleBand();
+  const w = Math.max(160, vp.w - (narrow.matches ? 24 : 320));
+  const h = Math.max(160, (band.bottom - band.top) - 24);
+  const scale = Math.max(8, Math.min(60000,
+    Math.min(w / Math.max(b.maxLon - b.minLon, 1e-4),
+             h / Math.max(y1 - y0, 1e-4))));
+  // 帯の中心とキャンバスの中心のずれを、緯度に足しておく。
+  const shift = ((band.top + band.bottom) / 2 - vp.h / 2) / scale;
+  lat = mercLat(mercY(lat) - shift);
+  state.view = { lat, lon, scale };
 }
 
 async function loadDataset(entry) {
@@ -1781,7 +1882,8 @@ function drawBasemap() {
   const size = tileDeg * state.view.scale * dpr;  // device px per tile
 
   const [latN, lonW] = unproject(0, 0);
-  const [latS, lonE] = unproject(innerWidth, innerHeight);
+  const vp = viewport();
+  const [latS, lonE] = unproject(vp.w, vp.h);
   const x0 = Math.floor((lonW + 180) / tileDeg), x1 = Math.floor((lonE + 180) / tileDeg);
   const y0 = Math.floor((0.5 - mercY(latN) / 360) * n);
   const y1 = Math.floor((0.5 - mercY(latS) / 360) * n);
@@ -1811,10 +1913,11 @@ function drawBasemap() {
 /* ---------- rendering ---------- */
 function resize() {
   readDpr();
-  canvas.width = Math.floor(innerWidth * DPR);
-  canvas.height = Math.floor(innerHeight * DPR);
-  canvas.style.width = innerWidth + "px";
-  canvas.style.height = innerHeight + "px";
+  const vp = viewport();
+  canvas.width = Math.floor(vp.w * DPR);
+  canvas.height = Math.floor(vp.h * DPR);
+  canvas.style.width = vp.w + "px";
+  canvas.style.height = vp.h + "px";
   glCanvas.width = canvas.width;
   glCanvas.height = canvas.height;
   glCanvas.style.width = canvas.style.width;
@@ -2264,35 +2367,44 @@ function prefStats() {
   const key = `${dataEpoch}:${state.bucket}`;
   if (prefCache && prefCache.key === key) return prefCache;
   const { first: firsts, last: lasts } = mesh.times[state.bucket];
-  const acc = new Map();
+
+  // 県ごとのセルの添字を1回だけ集める。ここでも座標と人口の組を作らない。
+  const counts = new Uint32Array(48);
+  for (let i = 0; i < mesh.n; i++) counts[mesh.pref[i]]++;
+  const idx = new Map();
+  for (let code = 1; code <= 47; code++) {
+    if (counts[code]) idx.set(code, new Uint32Array(counts[code]));
+  }
+  const fill = new Uint32Array(48);
   for (let i = 0; i < mesh.n; i++) {
     const code = mesh.pref[i];
-    if (!code) continue;
-    let g = acc.get(code);
-    if (!g) acc.set(code, g = { pref: String(code).padStart(2, "0"), pop: 0, served: 0,
-                                gapPop: 0, gapSum: 0, lats: [], lons: [] });
-    const pop = mesh.pop[i];
-    g.pop += pop;
-    g.lats.push([mesh.lat[i], pop]);
-    g.lons.push([mesh.lon[i], pop]);
-    if (lasts[i] < 0) continue;
-    g.served += pop;
-    const gap = gapSeconds(firsts[i], lasts[i]);
-    if (gap !== null) { g.gapPop += pop; g.gapSum += pop * gap; }
+    if (code) idx.get(code)[fill[code]++] = i;
   }
-  const rows = [...acc.values()]
-    .map((g) => {
-      // Framing only -- the figures above are computed over every cell. Tokyo
-      // reaches 小笠原 at 24.3N and 南鳥島 at 154.0E, so a raw bounding box
-      // zooms the capital out to nothing for the sake of 0.17% of its people.
-      const [minLat, maxLat] = outlyingTrim(g.lats, g.pop);
-      const [minLon, maxLon] = outlyingTrim(g.lons, g.pop);
-      return { ...g, minLat, maxLat, minLon, maxLon,
-               gap: g.gapPop ? g.gapSum / g.gapPop : null,
-               share: g.pop ? g.served / g.pop : 0 };
-    })
-    .filter((g) => g.gap !== null)
-    .sort((a, b) => b.gap - a.gap);
+
+  const rows = [];
+  for (const [code, cells] of idx) {
+    let pop = 0, served = 0, gapPop = 0, gapSum = 0;
+    for (const i of cells) {
+      const p = mesh.pop[i];
+      pop += p;
+      if (lasts[i] < 0) continue;
+      served += p;
+      const gap = gapSeconds(firsts[i], lasts[i]);
+      if (gap !== null) { gapPop += p; gapSum += p * gap; }
+    }
+    if (!gapPop) continue;
+    // Framing only -- the figures above are computed over every cell. Tokyo
+    // reaches 小笠原 at 24.3N and 南鳥島 at 154.0E, so a raw bounding box
+    // zooms the capital out to nothing for the sake of 0.17% of its people.
+    const latH = popByBin(mesh.lat, mesh.pop, cells, LAT_PER_DEG);
+    const lonH = popByBin(mesh.lon, mesh.pop, cells, LON_PER_DEG);
+    const [minLat, maxLat] = trimOutlying(latH);
+    const [minLon, maxLon] = trimOutlying(lonH);
+    rows.push({ pref: String(code).padStart(2, "0"), pop, served,
+                minLat, maxLat, minLon, maxLon,
+                gap: gapSum / gapPop, share: pop ? served / pop : 0 });
+  }
+  rows.sort((a, b) => b.gap - a.gap);
   prefCache = { key, rows };
   return prefCache;
 }
@@ -2432,6 +2544,31 @@ $("eraTime").addEventListener("input", (e) => {
 
 $("eraPlay").onclick = playEra;
 
+/* ---------- 狭い画面 ---------- */
+// 畳んだ状態では、地図・モードの切替・時刻だけを出す。凡例と県別と出典は
+// 「詳しく」で開く。地図が見えない画面は、地図としての用を成さない。
+$("moreToggle").onclick = (e) => {
+  const open = !document.body.classList.contains("more-open");
+  document.body.classList.toggle("more-open", open);
+  e.currentTarget.setAttribute("aria-expanded", String(open));
+  e.currentTarget.textContent = open ? "閉じる" : "詳しく";
+  requestAnimationFrame(stackControls);
+};
+
+// 狭い画面では操作パネルと時刻の帯を下に積む。position を CSS で静的に
+// 戻すので、並べるのは入れ物に入れるだけでよい。
+function stackControls() {
+  const stack = $("bottomStack");
+  const panel = $("controlPanel"), bar = $("controls");
+  if (narrow.matches) {
+    if (panel.parentElement !== stack) stack.append(panel, bar);
+  } else if (panel.parentElement === stack) {
+    document.body.append(panel, bar);
+  }
+}
+addEventListener("resize", stackControls);
+narrow.addEventListener("change", () => { stackControls(); resize(); });
+
 $("changePick").onchange = async (e) => {
   await loadChange(e.currentTarget.value);
   render();
@@ -2445,12 +2582,42 @@ $("time").addEventListener("input", (e) => {
 });
 
 let drag = null;
+// 指2本の拡大縮小。マウスのホイールに当たるものが無い端末では、これが無いと
+// 縮尺を変える手段が無い（ブラウザのピンチはページ全体の拡大になってしまう）。
+const touches = new Map();
+let pinch = null;
+
+function pinchState() {
+  const [a, b] = [...touches.values()];
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return { dist: Math.hypot(dx, dy), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+}
+
 canvas.addEventListener("pointerdown", (e) => {
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (touches.size >= 2) { pinch = pinchState(); drag = null; return; }
   drag = { x: e.clientX, y: e.clientY, y0: mercY(state.view.lat), lon: state.view.lon };
   canvas.classList.add("dragging");
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointermove", (e) => {
+  if (touches.has(e.pointerId)) {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size === 2) {
+      const now = pinchState();
+      if (!pinch) { pinch = now; drag = null; return; }
+      const [lat0, lon0] = unproject(now.cx, now.cy);
+      state.view.scale = Math.max(8, Math.min(60000,
+        state.view.scale * (now.dist / Math.max(1, pinch.dist))));
+      const [lat1, lon1] = unproject(now.cx, now.cy);
+      state.view.lat += lat0 - lat1;
+      state.view.lon += lon0 - lon1;
+      pinch = now;
+      writeUrl();
+      requestRender();
+      return;
+    }
+  }
   if (!drag) return showTip(e);
   state.view.lat = mercLat(drag.y0 + (e.clientY - drag.y) / state.view.scale);
   state.view.lon = drag.lon - (e.clientX - drag.x) / state.view.scale;
@@ -2458,7 +2625,12 @@ canvas.addEventListener("pointermove", (e) => {
   requestRender();
 });
 for (const ev of ["pointerup", "pointercancel"]) {
-  canvas.addEventListener(ev, () => { drag = null; canvas.classList.remove("dragging"); });
+  canvas.addEventListener(ev, (e) => {
+    touches.delete(e.pointerId);
+    if (touches.size < 2) pinch = null;
+    drag = null;
+    canvas.classList.remove("dragging");
+  });
 }
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
@@ -2677,6 +2849,7 @@ async function readUrl() {
   glInit();
   paintLegendDots();
   resize();
+  stackControls();
   loadCredits();
   try {
     await loadDataset(manifest[0]);
