@@ -433,12 +433,65 @@ function viewport() {
 const narrow = matchMedia("(max-width: 720px)");
 readDpr();
 
+/* ---------- いまの時刻から始める ---------- */
+// 開いた瞬間に見たいのは、たいてい「今このへんはどうなっているか」で、
+// 20:00 固定だとそこまで自分でスライダーを動かすことになる。
+
+// 地図の中身は日本の時刻表なので、端末が海外に置かれていても日本時間で読む
+// （日本に夏時間は無いので、通年 UTC+9 でよい）。
+function nowJst() {
+  const d = new Date();
+  return new Date(d.getTime() + (d.getTimezoneOffset() + 540) * 60000);
+}
+
+// 祝日は pipeline が書き出した一覧を読む。曜日はブラウザが知っているが
+// 祝日は知らない。同じ判定をここにもう1つ書くと、いつか静かに食い違う。
+let HOLIDAYS = null;
+async function loadHolidays() {
+  try {
+    const res = await fetch("holidays.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const json = await res.json();
+    HOLIDAYS = { years: json.years, set: new Set(json.dates) };
+  } catch (e) { /* 一覧が無ければ曜日だけで決める */ }
+}
+
+// 日付の種別。休日 = 日曜と祝日（pipeline/services.py の day_type と同じ規則）。
+// 一覧の範囲外の年は祝日が分からないので、曜日だけで決める。祝日を平日と
+// 呼んでしまうことになるが、勝手に推測するよりはよい。
+function dayType(d) {
+  const wd = d.getDay();
+  const key = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}` +
+              `${String(d.getDate()).padStart(2, "0")}`;
+  const known = HOLIDAYS && d.getFullYear() >= HOLIDAYS.years[0]
+                         && d.getFullYear() <= HOLIDAYS.years[1];
+  if (wd === 0 || (known && HOLIDAYS.set.has(key))) return "ho";
+  if (wd === 6) return "sa";
+  return "wd";
+}
+
+// いまの時刻と曜日。時刻表の1日は 04:00 に始まり、そこから 24時間を超えて
+// 続く（26:10 のような表記）。深夜2時は「今日の 02:00」ではなく「前日の
+// 26:00」なので、曜日も前日で見る。日曜の 25:00 はまだ休日ダイヤ。
+function nowClock() {
+  const d = nowJst();
+  let t = d.getHours() * 3600 + d.getMinutes() * 60;
+  const day = new Date(d);
+  if (d.getHours() < 4) { t += 86400; day.setDate(day.getDate() - 1); }
+  return { t, bucket: dayType(day) };
+}
+
+// 初期表示が「いま」であることは、言わないと伝わらない（20:37 という半端な
+// 時刻の理由が分からない）。読み手が時刻か曜日を動かしたら消す。
+let atNow = false;
+
 const state = {
   data: null, mesh: null, bounds: null, bucket: "wd",
   // "stops" | "gap" | "drop" — 地図が答えている問いそのもの。
   mode: "stops",
   // null = 全国。都道府県コードを入れると読み取り欄がその県だけになる。
   prefFilter: null,
+  // 読み込み時に nowClock() で上書きする（下限は 4:00 なので早朝もここ）
   t: 20 * 3600,
   // 年表モードで見ている改正の番号（0 = 最も古い版）
   era: 0,
@@ -770,6 +823,21 @@ async function loadDataset(entry) {
   const bounds = boundsOf(data, state.mesh);
   if (bounds && !samePlace(state.bounds, bounds)) fitTo(bounds);
   state.bounds = bounds;
+  // 最初の1回だけ。データを切り替えたときに読み手が選んだ時刻を巻き戻さない。
+  if (!started) {
+    started = true;
+    const now = nowClock();
+    // スライダーの刻み（5分）に合わせて切り捨てる。刻みに乗っていない値を
+    // 入れると、時計は 20:22 なのにつまみは 20:20 を指し、動かした瞬間に
+    // 2分戻る。切り上げないのは、まだ来ていない時刻を「いま」と書かないため。
+    const time = $("time");
+    const step = Number(time.step) || 1;
+    const t = MIN_T + Math.floor((now.t - MIN_T) / step) * step;
+    state.t = Math.max(MIN_T, Math.min(MAX_T, t));
+    time.value = state.t;
+    if (data.buckets.includes(now.bucket)) state.bucket = now.bucket;
+    atNow = true;
+  }
   buildBucketButtons(data);
   $("status").style.display = "none";
   render();
@@ -777,6 +845,7 @@ async function loadDataset(entry) {
 
 // 名前は 1.2MB あって、ツールチップで1つずつしか読まない。最初に拡大して
 // 停留所に触れたときに取りに行く。
+let started = false;
 let namesLoading = null;
 function ensureNames() {
   const data = state.data;
@@ -818,12 +887,29 @@ function stopProfile() {
   return (stopProfiles[state.bucket] = { live, served });
 }
 
+function bucketLabel(b) {
+  const data = state.data;
+  return (data && data.bucket_labels && data.bucket_labels[b]) || b;
+}
+
+// 時計の下の1行。初期表示のあいだだけ「いま」を添える。
+function paintDayLabel() {
+  $("daylabel").textContent = bucketLabel(state.bucket) + (atNow ? "・いま" : "");
+}
+
+// 読み手が自分で時刻か曜日を選んだ時点で、そこはもう「いま」ではない。
+function leaveNow() {
+  if (!atNow) return;
+  atNow = false;
+  paintDayLabel();
+}
+
 function buildBucketButtons(data) {
   const host = $("buckets");
   host.innerHTML = "";
   for (const b of data.buckets) {
     const btn = document.createElement("button");
-    btn.textContent = (data.bucket_labels && data.bucket_labels[b]) || b;
+    btn.textContent = bucketLabel(b);
     btn.setAttribute("aria-pressed", String(b === state.bucket));
     btn.onclick = () => {
       state.bucket = b;
@@ -831,12 +917,14 @@ function buildBucketButtons(data) {
       prefCache = null;
       if (!$("prefWrap").hidden) drawPrefs();
       [...host.children].forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
-      $("daylabel").textContent = btn.textContent;
+      atNow = false;
+      paintDayLabel();
       writeUrl();
       render();
     };
     host.appendChild(btn);
   }
+  paintDayLabel();
 }
 
 // Whether a place is inside its own operating hours at t.
@@ -2577,6 +2665,7 @@ $("changePick").onchange = async (e) => {
 /* ---------- interaction ---------- */
 $("time").addEventListener("input", (e) => {
   state.t = Number(e.target.value);
+  leaveNow();
   writeUrl();
   requestRender();
 });
@@ -2784,7 +2873,9 @@ function writeUrl() {
     urlPending = 0;
     const p = new URLSearchParams();
     if (state.mode !== "stops") p.set("m", state.mode);
-    if (state.bucket !== "wd") p.set("d", state.bucket);
+    // 既定の曜日は開いた日で変わるので、省略すると同じURLが日によって
+    // 別の絵になる。いつも書く。
+    p.set("d", state.bucket);
     if (state.mode === "stops") p.set("t", state.t);
     if (state.prefFilter) p.set("p", state.prefFilter);
     if (state.mode === "timeline") {
@@ -2802,20 +2893,36 @@ function writeUrl() {
   }, 250);
 }
 
+// このビューアが書き出す鍵。SNS がリンクに足す ?fbclid= のような別物を
+// 「状態が指定されたURL」と読むと、共有されたリンクが初期表示（いまの時刻）を
+// 失う。自分の鍵が1つも無ければ、ただ開いたのと同じ扱いにする。
+const URL_KEYS = ["m", "d", "t", "p", "s", "g", "c", "ll"];
+
 async function readUrl() {
   const p = new URLSearchParams(location.search);
-  if (!p.toString()) return false;
-  const bucket = p.get("d");
-  if (bucket) {
-    state.bucket = bucket;
+  if (!URL_KEYS.some((k) => p.has(k))) return false;
+  // d が無いURLは、曜日を書き出していなかった頃に配られたもの。当時の既定は
+  // 平日なので平日で開く。いまの既定（開いた日の曜日）を当てると、同じURLが
+  // 日曜に別の絵を出すことになる。
+  // 値そのものも確かめる。手で書き換えられたURLをそのまま state に入れると、
+  // どのボタンも押されていない・地図に何も出ない状態になり、壊れて見える。
+  const known = state.data.buckets || [];
+  const asked = p.get("d");
+  const bucket = known.includes(asked) ? asked : "wd";
+  state.bucket = bucket;
+  atNow = false;
+  {
     const host = $("buckets");
     [...host.children].forEach((c, i) => {
-      const on = (state.data.buckets || [])[i] === bucket;
-      c.setAttribute("aria-pressed", String(on));
-      if (on) $("daylabel").textContent = c.textContent;
+      c.setAttribute("aria-pressed", String((state.data.buckets || [])[i] === bucket));
     });
+    paintDayLabel();
   }
-  if (p.has("t")) { state.t = Number(p.get("t")); $("time").value = state.t; }
+  if (p.has("t")) {
+    state.t = Number(p.get("t"));
+    $("time").value = state.t;
+    leaveNow();
+  }
   if (p.has("p")) setPrefFilter(p.get("p"));
   if (p.has("s") && timelineList[+p.get("s")]) {
     $("timelinePick").value = timelineList[+p.get("s")].path;
@@ -2826,7 +2933,9 @@ async function readUrl() {
     await loadChange(changeList[+p.get("c")].path);
   }
   const mode = p.get("m");
-  if (mode) setMode(mode);
+  if (mode && [...document.querySelectorAll("#modes button")].some((b) => b.dataset.mode === mode)) {
+    setMode(mode);
+  }
   if (p.has("g")) { state.era = Number(p.get("g")); $("eraTime").value = state.era; }
   const ll = (p.get("ll") || "").split(",").map(Number);
   // 位置はモードの後に入れる。年表に切り替えると事業者の範囲に寄せられるので。
@@ -2852,6 +2961,8 @@ async function readUrl() {
   stackControls();
   loadCredits();
   try {
+    // 曜日の初期値を決めるのに要るので、データより先に読む（数KB）。
+    await loadHolidays();
     await loadDataset(manifest[0]);
     await readUrl();
   } catch (err) { showError(err); }
