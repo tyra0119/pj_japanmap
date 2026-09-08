@@ -209,7 +209,7 @@
     </div>
     <div class="legend" id="legendTimeline" hidden>
       <select id="timelinePick"></select>
-      <div class="row">保存されている改正を古い順に並べ、<b>最初の版と比べる</b></div>
+      <div class="hintline">保存されている改正を古い順に並べ、<b>最初の版と比べる</b></div>
       <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
       <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった（濃いほど大きく、1時間で最濃）</div>
       <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
@@ -308,6 +308,15 @@
 
 const MIN_T = 4 * 3600, MAX_T = 26 * 3600;
 
+// 地図の描画は画面の画素数に比例する。Retina では devicePixelRatio が 2〜3 に
+// なり、46万セルを 2100万画素の裏キャンバスに置くことになって、控えを作り直す
+// たびに数十msかかる。地図の中身は点と塗りで、細い文字はDOM側にあるので、
+// ここは 1.5 で頭を打たせる。resize のたびに読み直す（窓を別の画面に移すと
+// 変わる）。
+let DPR = 1;
+function readDpr() { DPR = Math.min(devicePixelRatio || 1, 1.5); }
+readDpr();
+
 const state = {
   data: null, mesh: null, bounds: null, field: {}, meshField: {}, bucket: "wd",
   // "stops" | "gap" | "drop" — 地図が答えている問いそのもの。
@@ -347,17 +356,17 @@ function mercLat(y) {
 function project(lat, lon) {
   const { view } = state;
   return [
-    canvas.width / 2 + (lon - view.lon) * view.scale * devicePixelRatio,
-    canvas.height / 2 - (mercY(lat) - mercY(view.lat)) * view.scale * devicePixelRatio,
+    canvas.width / 2 + (lon - view.lon) * view.scale * DPR,
+    canvas.height / 2 - (mercY(lat) - mercY(view.lat)) * view.scale * DPR,
   ];
 }
 function unproject(px, py) {
   const { view } = state;
-  const y = mercY(view.lat) - (py * devicePixelRatio - canvas.height / 2)
-            / (view.scale * devicePixelRatio);
+  const y = mercY(view.lat) - (py * DPR - canvas.height / 2)
+            / (view.scale * DPR);
   return [
     mercLat(y),
-    view.lon + (px * devicePixelRatio - canvas.width / 2) / (view.scale * devicePixelRatio),
+    view.lon + (px * DPR - canvas.width / 2) / (view.scale * DPR),
   ];
 }
 
@@ -560,6 +569,7 @@ function buildBucketButtons(data) {
       if (!$("prefWrap").hidden) drawPrefs();
       [...host.children].forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
       $("daylabel").textContent = btn.textContent;
+      writeUrl();
       render();
     };
     host.appendChild(btn);
@@ -632,20 +642,30 @@ const NO_SERVICE_RGB = [64, 74, 92];
 // 本体のキャンバスは getImageData を拒否する（汚染される）。
 let overlay = null, overlayImg = null, overlayBuf = null;
 
-function sizeOverlay() {
+// 描き込み先。既定は本体のキャンバスだが、控え（下の layerCache）を作るときは
+// 一回り大きい裏のキャンバスに差し替える。
+let paint = null;
+
+function target() {
+  return paint || { ctx, w: canvas.width, h: canvas.height,
+                    cx: canvas.width / 2, cy: canvas.height / 2 };
+}
+
+function sizeOverlay(w, h) {
   overlay = overlay || document.createElement("canvas");
-  overlay.width = canvas.width;
-  overlay.height = canvas.height;
-  overlayImg = overlay.getContext("2d").createImageData(canvas.width, canvas.height);
+  overlay.width = w;
+  overlay.height = h;
+  overlayImg = overlay.getContext("2d").createImageData(w, h);
   overlayBuf = new Uint32Array(overlayImg.data.buffer);
 }
 
 const PIXEL_SIDE = 2.5;
 
 function beginLayer(side, alpha) {
-  const w = canvas.width, h = canvas.height;
+  const T = target();
+  const w = T.w, h = T.h;
   if (side <= PIXEL_SIDE) {
-    if (!overlayBuf || overlay.width !== w) sizeOverlay();
+    if (!overlayBuf || overlay.width !== w || overlay.height !== h) sizeOverlay(w, h);
     overlayBuf.fill(0);
     return {
       dot(x, y, r, g, b, a) {
@@ -655,16 +675,16 @@ function beginLayer(side, alpha) {
       },
       end() {
         overlay.getContext("2d").putImageData(overlayImg, 0, 0);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.drawImage(overlay, 0, 0);
-        ctx.restore();
+        T.ctx.save();
+        T.ctx.globalAlpha = alpha;
+        T.ctx.drawImage(overlay, 0, 0);
+        T.ctx.restore();
       },
     };
   }
   const styles = new Map();
-  ctx.save();
-  ctx.globalAlpha = alpha;
+  T.ctx.save();
+  T.ctx.globalAlpha = alpha;
   const half = side / 2;
   return {
     dot(x, y, r, g, b, a) {
@@ -674,10 +694,10 @@ function beginLayer(side, alpha) {
         style = a < 1 ? `rgba(${r},${g},${b},${a})` : `rgb(${r},${g},${b})`;
         styles.set(key, style);
       }
-      ctx.fillStyle = style;
-      ctx.fillRect(x - half, y - half, side, side);
+      T.ctx.fillStyle = style;
+      T.ctx.fillRect(x - half, y - half, side, side);
     },
-    end() { ctx.restore(); },
+    end() { T.ctx.restore(); },
   };
 }
 
@@ -685,25 +705,90 @@ function beginLayer(side, alpha) {
 // 緯度の Mercator 変換はデータが変わらない限り変わらないので読み込み時に
 // 済ませ、毎フレームは掛けて足すだけにする。
 function viewTransform() {
-  const k = state.view.scale * devicePixelRatio;
-  return { k, cx: canvas.width / 2, cy: canvas.height / 2,
+  const T = target();
+  const k = state.view.scale * DPR;
+  return { k, cx: T.cx, cy: T.cy, w: T.w, h: T.h,
            lon: state.view.lon, my: mercY(state.view.lat) };
+}
+
+// データ層は「地図のどこを見ているか」では中身が変わらない。平行移動なら
+// 描き直さず、描いておいた絵をずらせばよい（近似ではなく厳密に一致する）。
+// 画面より一回り大きく描いておくので、少し動かした程度では描き直しが要らない。
+// 拡大縮小のあいだは伸縮して見せ、手が止まってから描き直す。
+// 控えは画面の 1.44 倍の面積になる。広くすれば描き直しは減るが、DPR 1.5 の
+// 大きな窓では裏キャンバスだけで数十MB になるので、この辺で止める。
+const LAYER_MARGIN = 0.22;
+const SETTLE_MS = 160;
+let layerCache = { key: null, canvas: null, scale: 0, lon: 0, my: 0, w: 0, h: 0 };
+let settleTimer = 0;
+
+function layerKey() {
+  return [dataEpoch, state.mode, state.bucket, state.prefFilter, state.era,
+          state.mode === "stops" ? state.t : 0].join("|");
+}
+
+function drawCachedLayer(draw) {
+  const dpr = DPR;
+  const w = Math.ceil(canvas.width * (1 + 2 * LAYER_MARGIN));
+  const h = Math.ceil(canvas.height * (1 + 2 * LAYER_MARGIN));
+  const v = state.view, my = mercY(v.lat);
+  const c = layerCache;
+  const key = layerKey();
+  const fresh = c.canvas && c.key === key && c.w === w && c.h === h;
+  const ratio = fresh ? v.scale / c.scale : 0;
+  const k = c.scale * dpr;
+  let dx = 0, dy = 0, exact = false, usable = false;
+
+  if (fresh && ratio === 1) {
+    dx = (c.lon - v.lon) * k;
+    dy = (my - c.my) * k;
+    exact = usable = (Math.abs(dx) <= (w - canvas.width) / 2
+                      && Math.abs(dy) <= (h - canvas.height) / 2);
+  } else if (fresh && ratio > 0.4 && ratio < 2.5) {
+    // 拡大縮小の途中。伸縮して見せておいて、あとで描き直す。
+    usable = true;
+  }
+
+  if (!usable) {
+    if (!c.canvas) c.canvas = document.createElement("canvas");
+    if (c.canvas.width !== w || c.canvas.height !== h) { c.canvas.width = w; c.canvas.height = h; }
+    const cctx = c.canvas.getContext("2d");
+    cctx.clearRect(0, 0, w, h);
+    paint = { ctx: cctx, w, h, cx: w / 2, cy: h / 2 };
+    try { draw(); } finally { paint = null; }
+    c.key = key; c.scale = v.scale; c.lon = v.lon; c.my = my; c.w = w; c.h = h;
+    exact = true; dx = dy = 0;
+  }
+
+  if (exact) {
+    ctx.drawImage(c.canvas, (canvas.width - w) / 2 + dx, (canvas.height - h) / 2 + dy);
+  } else {
+    const r = v.scale / c.scale;
+    const kk = c.scale * dpr * r;
+    const ox = canvas.width / 2 + (c.lon - v.lon) * kk - (w / 2) * r;
+    const oy = canvas.height / 2 - (c.my - my) * kk - (h / 2) * r;
+    ctx.drawImage(c.canvas, ox, oy, w * r, h * r);
+  }
+
+  if (!exact) {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { layerCache.key = null; render(); }, SETTLE_MS);
+  }
 }
 
 function drawGapLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const fi = state.meshField[`${state.bucket}_first`];
   const li = state.meshField[`${state.bucket}_last`];
   if (fi === undefined || li === undefined) return;
   // One cell is 500 m; below a pixel it is not worth a fill call, but the
   // cells still have to cover the ground or the layer looks like noise.
   const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
-  const { k, cx, cy, lon, my } = viewTransform();
+  const { k, cx, cy, w, h, lon, my } = viewTransform();
   const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
-  const w = canvas.width, h = canvas.height;
-  const paint = beginLayer(side, 0.85);
+  const brush = beginLayer(side, 0.85);
   for (let i = 0; i < cells.length; i++) {
     const x = cx + (mx[i] - lon) * k;
     if (x < -side || x > w + side) continue;
@@ -712,9 +797,9 @@ function drawGapLayer() {
     const cell = cells[i];
     const gap = gapSeconds(cell[fi], cell[li]);
     const rgb = gap === null ? NO_SERVICE_RGB : gapColor(gap);
-    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
+    brush.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  paint.end();
+  brush.end();
 }
 
 /* ---------- 休日の落差 ---------- */
@@ -756,12 +841,11 @@ function holidayDrop(cell) {
 function drawDropLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells) return;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
-  const { k, cx, cy, lon, my } = viewTransform();
+  const { k, cx, cy, w, h, lon, my } = viewTransform();
   const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
-  const w = canvas.width, h = canvas.height;
-  const paint = beginLayer(side, 0.85);
+  const brush = beginLayer(side, 0.85);
   for (let i = 0; i < cells.length; i++) {
     const x = cx + (mx[i] - lon) * k;
     if (x < -side || x > w + side) continue;
@@ -770,9 +854,9 @@ function drawDropLayer() {
     const drop = holidayDrop(cells[i]);
     if (drop === null) continue;
     const rgb = drop === "none" ? DROP_NONE_RGB : dropColor(drop);
-    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
+    brush.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  paint.end();
+  brush.end();
 }
 
 function updateDrop() {
@@ -872,11 +956,10 @@ function changeOf(row) {
 function drawChangeLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.cells || !changeData) return;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr * 1.6;
-  const { k, cx, cy, lon, my } = viewTransform();
-  const w = canvas.width, h = canvas.height;
-  const paint = beginLayer(side, 0.9);
+  const { k, cx, cy, w, h, lon, my } = viewTransform();
+  const brush = beginLayer(side, 0.9);
   for (const [n, row] of changeData.byCell) {
     if (n >= mesh.mx.length) continue;
     const x = cx + (mesh.mx[n] - lon) * k;
@@ -886,9 +969,9 @@ function drawChangeLayer() {
     const c = changeOf(row);
     if (c === 0) continue;
     const rgb = c === -1 ? CHANGE_GONE : c === -2 ? CHANGE_BETTER : CHANGE_EARLIER;
-    paint.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
+    brush.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
-  paint.end();
+  brush.end();
 }
 
 function updateChange() {
@@ -1012,15 +1095,14 @@ function drawTimelineLayer() {
   const series = timelineData;
   if (!series) return;
   const blank = eraBlank(series, state.era);
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const side = Math.max(2, 0.0045 * state.view.scale) * dpr * 1.6;
-  const { k, cx, cy, lon, my } = viewTransform();
-  const w = canvas.width, h = canvas.height;
+  const { k, cx, cy, w, h, lon, my } = viewTransform();
   if (!series.my) {
     series.my = new Float32Array(series.cells.map((c) => mercY(c[1])));
     series.mx = new Float32Array(series.cells.map((c) => c[2]));
   }
-  const paint = beginLayer(side, 1);
+  const brush = beginLayer(side, 1);
   for (let i = 0; i < series.cells.length; i++) {
     const cell = series.cells[i];
     const x = cx + (series.mx[i] - lon) * k;
@@ -1038,9 +1120,9 @@ function drawTimelineLayer() {
     const a = c === 0 ? 0.28
             : c > 0 ? 0.3 + 0.62 * Math.min(1, c / 3600)
             : 0.92;
-    paint.dot(x, y, rgb[0], rgb[1], rgb[2], a);
+    brush.dot(x, y, rgb[0], rgb[1], rgb[2], a);
   }
-  paint.end();
+  brush.end();
 }
 
 function updateTimeline() {
@@ -1093,7 +1175,7 @@ function updateTimeline() {
 function drawEraCurve() {
   const cv = $("eraCurve"), series = timelineData;
   if (!cv || !series) return;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const w = cv.clientWidth || 300, h = 96;
   cv.width = w * dpr; cv.height = h * dpr;
   const c = cv.getContext("2d");
@@ -1228,7 +1310,7 @@ function tileFor(z, x, y) {
 }
 
 function drawBasemap() {
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   // The zoom whose tiles are closest to 1:1 with the current scale.
   const worldPx = state.view.scale * 360;
   const z = Math.max(TILE_ZOOM.min,
@@ -1267,11 +1349,14 @@ function drawBasemap() {
 
 /* ---------- rendering ---------- */
 function resize() {
-  canvas.width = Math.floor(innerWidth * devicePixelRatio);
-  canvas.height = Math.floor(innerHeight * devicePixelRatio);
+  readDpr();
+  canvas.width = Math.floor(innerWidth * DPR);
+  canvas.height = Math.floor(innerHeight * DPR);
   canvas.style.width = innerWidth + "px";
   canvas.style.height = innerHeight + "px";
-  sizeOverlay();
+  // 裏のキャンバスは使う側（beginLayer）が必要な大きさで作り直す。控えは
+  // 画面の大きさで作ってあるので捨てる。
+  layerCache.key = null;
   render();
 }
 
@@ -1283,6 +1368,9 @@ function requestRender() {
   renderPending = requestAnimationFrame(() => { renderPending = 0; render(); });
 }
 
+// 停留所の数え上げは地図の位置に依らないので、控えと同じ鍵で覚えておく。
+let stopCounts = { key: null, live: 0, served: 0 };
+
 function render() {
   const data = state.data;
   ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--bg");
@@ -1292,18 +1380,24 @@ function render() {
     // The two layers answer different questions -- "is there a bus after this
     // moment" and "how much of the day has none" -- and drawn together
     // neither reads. The stop layer steps aside.
-    if (state.mode === "gap") drawGapLayer();
-    else if (state.mode === "drop") drawDropLayer();
-    else if (state.mode === "timeline") drawTimelineLayer();
-    else drawChangeLayer();
+    drawCachedLayer(state.mode === "gap" ? drawGapLayer
+                    : state.mode === "drop" ? drawDropLayer
+                    : state.mode === "timeline" ? drawTimelineLayer
+                    : drawChangeLayer);
     if (data) updateReadout(0, 0, populationShare(state.t));
     return;
   }
   if (!data) return;
+  drawCachedLayer(drawStopsLayer);
+  updateReadout(stopCounts.live, stopCounts.served, populationShare(state.t));
+}
 
+function drawStopsLayer() {
+  const data = state.data;
   const t = state.t;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * dpr;
+  const T = target();
 
   let liveStops = 0, servedStops = 0;
 
@@ -1314,8 +1408,7 @@ function render() {
   // entirely -- and the basemap is what tells the reader where the gaps are.
   // Overlapping points still darken each other, so density stays visible.
   const live = [];
-  const { k, cx, cy, lon, my } = viewTransform();
-  const w = canvas.width, h = canvas.height;
+  const { k, cx, cy, w, h, lon, my } = viewTransform();
   const lons = data.lons, mys = data.my;
   const times = (data.times || {})[state.bucket];
   const firsts = times && times.first, lasts = times && times.last;
@@ -1337,23 +1430,22 @@ function render() {
   }
   retired.end();
 
-  ctx.fillStyle = "#ffcf6b";
+  T.ctx.fillStyle = "#ffcf6b";
   if (r <= PIXEL_SIDE) {
     // One arc per point costs more than the whole rest of the frame once
     // there are tens of thousands of them and each is a pixel wide.
     for (let i = 0; i < live.length; i += 2) {
-      ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
+      T.ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
     }
   } else {
-    ctx.beginPath();
+    T.ctx.beginPath();
     for (let i = 0; i < live.length; i += 2) {
-      ctx.moveTo(live[i] + r, live[i + 1]);
-      ctx.arc(live[i], live[i + 1], r, 0, Math.PI * 2);
+      T.ctx.moveTo(live[i] + r, live[i + 1]);
+      T.ctx.arc(live[i], live[i + 1], r, 0, Math.PI * 2);
     }
-    ctx.fill();
+    T.ctx.fill();
   }
-
-  updateReadout(liveStops, servedStops, populationShare(t));
+  stopCounts = { key: layerKey(), live: liveStops, served: servedStops };
 }
 
 // スライダーの1目盛りごとに46万セルを数え直していた。運行時間帯は区間なので、
@@ -1553,7 +1645,7 @@ function drawCurve() {
   const box = $("curveMetric");
   box.hidden = !data;
   if (!data) return;
-  const dpr = devicePixelRatio;
+  const dpr = DPR;
   const w = c.clientWidth || 236, h = 66;
   if (c.width !== Math.floor(w * dpr)) { c.width = Math.floor(w * dpr); c.height = Math.floor(h * dpr); }
   const g = c.getContext("2d");
@@ -1687,6 +1779,7 @@ function setPrefFilter(pref) {
   $("scopeClear").hidden = !pref;
   [...document.querySelectorAll(".prow")].forEach((row) =>
     row.setAttribute("aria-selected", String(row.dataset.pref === pref)));
+  writeUrl();
   render();
 }
 
@@ -1852,6 +1945,7 @@ function setMode(mode) {
   // not move this map. Dimming it beats leaving the reader to drag it and
   // conclude the page is broken.
   $("controls").classList.toggle("timeless", mode !== "stops" && mode !== "timeline");
+  writeUrl();
   render();
 }
 
@@ -1870,6 +1964,7 @@ $("timelinePick").onchange = async (e) => {
 $("eraTime").addEventListener("input", (e) => {
   stopEra();
   state.era = Number(e.target.value);
+  writeUrl();
   render();
 });
 
@@ -1883,6 +1978,7 @@ $("changePick").onchange = async (e) => {
 /* ---------- interaction ---------- */
 $("time").addEventListener("input", (e) => {
   state.t = Number(e.target.value);
+  writeUrl();
   requestRender();
 });
 
@@ -1896,6 +1992,7 @@ canvas.addEventListener("pointermove", (e) => {
   if (!drag) return showTip(e);
   state.view.lat = mercLat(drag.y0 + (e.clientY - drag.y) / state.view.scale);
   state.view.lon = drag.lon - (e.clientX - drag.x) / state.view.scale;
+  writeUrl();
   requestRender();
 });
 for (const ev of ["pointerup", "pointercancel"]) {
@@ -1908,6 +2005,7 @@ canvas.addEventListener("wheel", (e) => {
   const [lat1, lon1] = unproject(e.clientX, e.clientY);
   state.view.lat += lat0 - lat1;
   state.view.lon += lon0 - lon1;
+  writeUrl();
   requestRender();
 }, { passive: false });
 
@@ -1921,7 +2019,7 @@ function showTip(e) {
   let best = -1, bestD = 14 * 14;
   for (let i = 0; i < data.stops.length; i++) {
     const [x, y] = project(data.lats[i], data.lons[i]);
-    const dx = x / devicePixelRatio - e.clientX, dy = y / devicePixelRatio - e.clientY;
+    const dx = x / DPR - e.clientX, dy = y / DPR - e.clientY;
     const d = dx * dx + dy * dy;
     if (d < bestD) { bestD = d; best = i; }
   }
@@ -1940,6 +2038,71 @@ canvas.addEventListener("pointerleave", () => { $("tip").style.display = "none";
 
 addEventListener("resize", resize);
 
+/* ---------- 共有できるURL ---------- */
+// 見ている状態がアドレス欄に出ていないと、人に見せたい1枚を渡せない。
+// 「休日の落差の全国」を口で説明する代わりにURLを送れるようにする。
+// 履歴には積まない（スライダーを動かすたびに戻るボタンが増えても困る）。
+let urlPending = 0;
+
+function writeUrl() {
+  if (urlPending) return;
+  urlPending = setTimeout(() => {
+    urlPending = 0;
+    const p = new URLSearchParams();
+    if (state.mode !== "stops") p.set("m", state.mode);
+    if (state.bucket !== "wd") p.set("d", state.bucket);
+    if (state.mode === "stops") p.set("t", state.t);
+    if (state.prefFilter) p.set("p", state.prefFilter);
+    if (state.mode === "timeline") {
+      const i = timelineList.findIndex((x) => timelineData && x.label === timelineData.label);
+      if (i > 0) p.set("s", i);
+      if (state.era) p.set("g", state.era);
+    }
+    if (state.mode === "change") {
+      const i = changeList.findIndex((x) => changeData && x.path === (changeData.entry || {}).path);
+      if (i > 0) p.set("c", i);
+    }
+    const v = state.view;
+    p.set("ll", `${v.lat.toFixed(4)},${v.lon.toFixed(4)},${Math.round(v.scale)}`);
+    history.replaceState(null, "", `?${p}`);
+  }, 250);
+}
+
+async function readUrl() {
+  const p = new URLSearchParams(location.search);
+  if (!p.toString()) return false;
+  const bucket = p.get("d");
+  if (bucket) {
+    state.bucket = bucket;
+    const host = $("buckets");
+    [...host.children].forEach((c, i) => {
+      const on = (state.data.buckets || [])[i] === bucket;
+      c.setAttribute("aria-pressed", String(on));
+      if (on) $("daylabel").textContent = c.textContent;
+    });
+  }
+  if (p.has("t")) { state.t = Number(p.get("t")); $("time").value = state.t; }
+  if (p.has("p")) setPrefFilter(p.get("p"));
+  if (p.has("s") && timelineList[+p.get("s")]) {
+    $("timelinePick").value = timelineList[+p.get("s")].path;
+    await loadTimeline(timelineList[+p.get("s")].path);
+  }
+  if (p.has("c") && changeList[+p.get("c")]) {
+    $("changePick").value = changeList[+p.get("c")].path;
+    await loadChange(changeList[+p.get("c")].path);
+  }
+  const mode = p.get("m");
+  if (mode) setMode(mode);
+  if (p.has("g")) { state.era = Number(p.get("g")); $("eraTime").value = state.era; }
+  const ll = (p.get("ll") || "").split(",").map(Number);
+  // 位置はモードの後に入れる。年表に切り替えると事業者の範囲に寄せられるので。
+  if (ll.length === 3 && ll.every((n) => !Number.isNaN(n))) {
+    state.view = { lat: ll[0], lon: ll[1], scale: ll[2] };
+  }
+  render();
+  return true;
+}
+
 (async function init() {
   const time = $("time");
   time.min = MIN_T; time.max = MAX_T; time.value = state.t;
@@ -1956,6 +2119,7 @@ addEventListener("resize", resize);
   loadCredits();
   try {
     await loadDataset(manifest[0].path, manifest[0].mesh);
+    await readUrl();
   } catch (err) { showError(err); }
 })();
 
