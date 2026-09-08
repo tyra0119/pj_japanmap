@@ -52,20 +52,19 @@
   .why { color: #6f7d90; font-size: 10px; margin-top: 4px; }
   #curveMetric .sub { margin: 6px 0 0; }
   #curve { width: 100%; height: 66px; display: block; margin-top: 6px; }
-  .gapscale { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 5px; }
-  .gapscale i { flex: 1; }
-  .gapscale i:nth-child(1) { background: rgb(70,128,92); }
-  .gapscale i:nth-child(2) { background: rgb(110,139,81); }
-  .gapscale i:nth-child(3) { background: rgb(150,150,70); }
-  .gapscale i:nth-child(4) { background: rgb(190,120,60); }
-  .gapscale i:nth-child(5) { background: rgb(200,80,70); }
-  .gapscale i:nth-child(6) { background: rgb(170,50,110); }
-  .dropscale { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin-top: 5px; }
-  .dropscale i { flex: 1; }
-  .dropscale i:nth-child(1) { background: rgb(58,74,66); }
-  .dropscale i:nth-child(2) { background: rgb(96,116,70); }
-  .dropscale i:nth-child(3) { background: rgb(186,130,62); }
-  .dropscale i:nth-child(4) { background: rgb(206,84,72); }
+  /* 色の帯は JS が gapColor / dropColor から作る。CSSに色を書くと、ランプを
+     直したときに凡例だけ古い色で残る。 */
+  .scale { position: relative; margin: 7px 0 2px; }
+  .scale .bar { display: block; height: 5px; border-radius: 3px; }
+  .scale .mark { position: absolute; top: -3px; width: 2px; height: 11px;
+                 background: var(--text); border-radius: 1px;
+                 box-shadow: 0 0 0 1px rgba(0,0,0,.65); }
+  .scale .mark[hidden] { display: none; }
+  .scale .ticks { position: relative; display: block; height: 13px; margin-top: 2px; }
+  .scale .ticks span { position: absolute; transform: translateX(-50%);
+                       font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+  .scale .ticks span.first { transform: none; }
+  .scale .ticks span.last { transform: translateX(-100%); }
   #dropBar > i, #dropMetric .bar > i { background: rgb(214,68,140); }
   #changeMetric .bar > i { background: rgb(214,68,140); }
 
@@ -88,7 +87,11 @@
   #controlPanel b { color: var(--text); font-size: 13px; display: block; }
   #controlPanel .sub { font-size: 10px; margin: 3px 0 0; line-height: 1.4; }
   .ctl { border-top: 1px solid var(--line); margin-top: 11px; padding-top: 10px;
-         display: flex; flex-direction: column; min-height: 0; }
+         display: flex; flex-direction: column; flex: none; }
+  /* 画面が足りないときに縮んでよいのは県一覧の区画だけ。ここを flex: none に
+     しないと、凡例を1行足しただけでモードのボタンが潰れる。 */
+  .ctl.grow { flex: 1 1 auto; min-height: 0; }
+  .seg { flex: none; }
   .ctlhead { display: flex; align-items: center; justify-content: space-between;
              color: var(--text); font-size: 10.5px; margin-bottom: 6px; letter-spacing: .04em; }
   .ctl .seg { width: 100%; }
@@ -124,6 +127,8 @@
   .prow .bw { height: 3px; background: var(--dead); border-radius: 2px; overflow: hidden; }
   .prow .bw i { display: block; height: 100%; }
   .prow .cv { text-align: right; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .phead { color: var(--muted); font-size: 9.5px; padding-bottom: 2px; cursor: default; }
+  .phead:hover { background: none; }
   .warn { font-size: 10px; line-height: 1.45; margin-top: 8px; color: #6f7d90; }
   .warn b { color: var(--text); }
   .foot { border-top: 1px solid var(--line); margin-top: 11px; padding-top: 9px; }
@@ -181,53 +186,58 @@
       <button type="button" data-mode="timeline" aria-pressed="false" hidden>年表</button>
     </div>
     <div class="legend" id="legendStops">
-      <div class="row"><span class="dot" style="background:var(--live)"></span>その時刻は運行時間帯</div>
-      <div class="row"><span class="dot" style="background:var(--dead-dot)"></span>運行時間外</div>
+      <div class="row"><span class="dot" id="liveDot"></span>その時刻は運行時間帯</div>
+      <div class="row"><span class="dot" id="retiredDot"></span>運行時間外</div>
+      <div class="row"><span class="dot" style="background:#6bb8ff"></span>右の曲線の縦線＝いま見ている時刻</div>
       <div class="hintline">下のスライダーで時刻を動かす</div>
     </div>
     <div class="legend" id="legendGap" hidden>
-      <div class="row">1日のうち公共交通が無い時間</div>
-      <div class="gapscale"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="row" style="justify-content:space-between"><span>6時間</span><span>20時間</span></div>
-      <div class="row"><span class="dot" style="background:rgb(64,74,92)"></span>便が無い</div>
-      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>人が住んでいない</div>
-      <div class="hintline">場所の性質なので時刻では変わらない</div>
+      <div class="row">1日のうち公共交通が無い時間（始発から終発までの外側）</div>
+      <div class="scale" id="gapScaleLegend"></div>
+      <div class="row"><span class="dot" id="gapNoneDot"></span>便が無い（データが無い場合も含む）</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>人が住んでいない（塗らない）</div>
+      <div class="hintline">6時間＝朝6時から24時まで動く町。20時間＝1日4時間しか便が無い。
+        両端は頭打ち（6時間以下・20時間以上はそれぞれ同じ色）。<br>
+        場所の性質なので時刻では変わらない</div>
     </div>
     <div class="legend" id="legendDrop" hidden>
-      <div class="row">平日にある便が、日曜・祝日にどれだけ減るか</div>
-      <div class="dropscale"><i></i><i></i><i></i><i></i></div>
-      <div class="row" style="justify-content:space-between"><span>変わらない</span><span>6時間短く</span></div>
-      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>休日は1本も無い</div>
-      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>平日にも便が無い</div>
-      <div class="hintline">曜日の切替は使わない（平日と休日を比べている）</div>
+      <div class="row">休日に空白時間がどれだけ延びるか（平日との差）</div>
+      <div class="scale" id="dropScaleLegend"></div>
+      <div class="row"><span class="dot" id="dropNoneDot"></span>休日は1本も無い</div>
+      <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>平日にも便が無い（比べようがない・塗らない）</div>
+      <div class="hintline">6時間以上は同じ色で頭打ち。
+        曜日の切替は使わない（平日と休日を比べている）</div>
     </div>
     <div class="legend" id="legendChange" hidden>
       <select id="changePick"></select>
       <div class="row">何が変わったか</div>
-      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
-      <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった</div>
-      <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
+      <div class="row"><span class="dot" id="chgDot0"></span>便が無くなった</div>
+      <div class="row"><span class="dot" id="chgDot1"></span>終発が早まった</div>
+      <div class="row"><span class="dot" id="chgDot2"></span>遅くなった・増えた</div>
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>変わっていない</div>
       <div class="warn" id="changeCaveat"></div>
     </div>
     <div class="legend" id="legendTimeline" hidden>
       <select id="timelinePick"></select>
       <div class="hintline">保存されている改正を古い順に並べ、<b>最初の版と比べる</b></div>
-      <div class="row"><span class="dot" style="background:rgb(214,68,140)"></span>便が無くなった</div>
-      <div class="row"><span class="dot" style="background:rgb(206,140,62)"></span>終発が早まった（濃いほど大きく、1時間で最濃）</div>
-      <div class="row"><span class="dot" style="background:rgb(90,150,110)"></span>遅くなった・増えた</div>
+      <div class="row"><span class="dot" id="tlDot0"></span>便が無くなった</div>
+      <div class="row"><span class="dot" id="tlDot1"></span>終発が早まった（濃いほど大きく、1時間で最濃）</div>
+      <div class="row"><span class="dot" id="tlDot2"></span>遅くなった・増えた</div>
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>最初の版のまま</div>
+      <div class="row"><span class="dot" id="tlDotOutlier"></span>右の折れ線の点＝前後から外れた版</div>
       <div class="hintline">下の ▶ で改正を送る。曜日の切替は効く</div>
       <div class="warn" id="timelineCaveat"></div>
     </div>
   </div>
 
-  <div class="ctl">
+  <div class="ctl grow">
     <div class="ctlhead">範囲 <button id="scopeClear" type="button" hidden>全国に戻す</button></div>
     <button class="wide" id="prefToggle" type="button" aria-expanded="false">
       <span id="scopeCurrent">全国</span><span class="caret">▾</span></button>
     <div id="prefWrap" hidden>
       <div class="sub">公共交通が無い時間の長い順。クリックでその県だけを見る</div>
+      <div class="prow phead"><span>県</span><span>空白時間</span>
+        <span>色＝空白時間の目盛り</span><span>収録</span></div>
       <div id="prefRows"></div>
       <div class="warn">
         右端の「収録」が低い県は、事業者がGTFSを公開していないだけのことが多い。
@@ -280,7 +290,7 @@
   <div class="metric" id="gapMetric" hidden>
     <div class="label">公共交通が無い時間</div>
     <div class="value"><span id="gapValue">–</span><small>/日</small></div>
-    <div class="gapscale"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="scale" id="gapScaleReadout"></div>
     <div class="sub" id="gapNote"></div>
   </div>
   <div class="note" id="meta"></div>
@@ -736,6 +746,80 @@ function gapColor(gap) {
 // gap ramp, because in a prefecture whose operators publish nothing this is
 // a hole in the data rather than a hole in the bus network.
 const NO_SERVICE_RGB = [64, 74, 92];
+
+/* ---------- 色の帯（凡例） ---------- */
+// 凡例は地図を塗るのと同じ関数から作る。CSSに色を書いていたときは、6時間と
+// 9時間の中間色が凡例にだけ存在し、目盛りも等間隔で並んでいた（実際のランプは
+// 6→9→12→15→20時間と幅が違う）。同じ関数から作れば、ランプを直したときに
+// 凡例が古いまま残ることがない。
+const SCALES = {
+  gap: {
+    colorOf: (v) => gapColor(v),
+    from: 6 * 3600, to: 20 * 3600,
+    ticks: [[6 * 3600, "6時間"], [9 * 3600, "9"], [12 * 3600, "12"],
+            [15 * 3600, "15"], [20 * 3600, "20時間"]],
+  },
+  drop: {
+    colorOf: (v) => dropColor(v),
+    from: 0, to: 6 * 3600,
+    ticks: [[0, "変わらない"], [2 * 3600, "2"], [4 * 3600, "4"],
+            [6 * 3600, "6時間"]],
+  },
+};
+
+function buildScale(el, kind) {
+  if (!el) return;
+  const s = SCALES[kind];
+  const stops = [];
+  for (let i = 0; i <= 24; i++) {
+    const v = s.from + (s.to - s.from) * (i / 24);
+    const [r, g, b] = s.colorOf(v);
+    stops.push(`rgb(${r},${g},${b}) ${(i / 24 * 100).toFixed(1)}%`);
+  }
+  const pos = (v) => ((v - s.from) / (s.to - s.from) * 100).toFixed(1);
+  const ticks = s.ticks.map(([v, label], i) => {
+    const cls = i === 0 ? "first" : i === s.ticks.length - 1 ? "last" : "";
+    return `<span class="${cls}" style="left:${pos(v)}%">${label}</span>`;
+  }).join("");
+  el.innerHTML = `<i class="bar" style="background:linear-gradient(90deg,${stops.join(",")})"></i>`
+    + `<b class="mark" hidden></b><em class="ticks">${ticks}</em>`;
+  el.dataset.kind = kind;
+}
+
+// いま出ている平均が帯のどこに当たるかを示す。数字だけだと、その色が
+// 「濃いほうなのか薄いほうなのか」が分からない。
+function markScale(el, value) {
+  if (!el || !el.dataset.kind) return;
+  const s = SCALES[el.dataset.kind];
+  const mark = el.querySelector(".mark");
+  if (!mark) return;
+  if (value === null || value === undefined) { mark.hidden = true; return; }
+  const k = Math.max(0, Math.min(1, (value - s.from) / (s.to - s.from)));
+  mark.hidden = false;
+  mark.style.left = `calc(${(k * 100).toFixed(1)}% - 1px)`;
+}
+
+function paintLegendDots() {
+  // 凡例の色はCSSに書かず、地図を塗るのと同じ定数から入れる。書き分けると
+  // ランプや色を直したときに凡例だけ古いまま残る。
+  const set = (id, rgb) => {
+    const el = $(id);
+    if (el) el.style.background = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  };
+  set("gapNoneDot", NO_SERVICE_RGB);
+  set("dropNoneDot", DROP_NONE_RGB);
+  set("liveDot", LIVE_RGB);
+  set("retiredDot", RETIRED_RGB);
+  set("tlDotOutlier", CHANGE_GONE);
+  for (const prefix of ["chg", "tl"]) {
+    set(`${prefix}Dot0`, CHANGE_GONE);
+    set(`${prefix}Dot1`, CHANGE_EARLIER);
+    set(`${prefix}Dot2`, CHANGE_BETTER);
+  }
+  buildScale($("gapScaleLegend"), "gap");
+  buildScale($("gapScaleReadout"), "gap");
+  buildScale($("dropScaleLegend"), "drop");
+}
 
 /* ---------- layer painting ---------- */
 // 全国表示では1セルが1px前後になる。そこに fillRect と fillStyle を46万回
@@ -1435,6 +1519,7 @@ void main() {
     if (a_last < 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
     bool live = a_first < 0.0 ? (u_t <= a_last) : (a_first <= u_t && u_t <= a_last);
     if ((u_mode == 3) != live) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    // LIVE_RGB / RETIRED_RGB と同じ値。片方を変えたらここも変える。
     color = live ? vec4(255.0, 207.0, 107.0, 255.0) / 255.0
                  : vec4(160.0, 178.0, 200.0, 255.0) / 255.0 * vec4(1.0, 1.0, 1.0, 0.28);
   }
@@ -1712,6 +1797,10 @@ function render() {
                 populationShare(state.t));
 }
 
+// 地図で使う色。凡例もシェーダもここを写す。
+const LIVE_RGB = [255, 207, 107];        // その時刻は運行時間帯
+const RETIRED_RGB = [160, 178, 200];     // 運行時間外（半透明で置く）
+
 function drawStopsLayer() {
   const data = state.data;
   const t = state.t;
@@ -1741,11 +1830,11 @@ function drawStopsLayer() {
     const y = cy - (mys[i] - my) * k;
     if (y < -20 || y > h + 20) continue;
     if (live_) live.push(x, y);
-    else retired.dot(x, y, 160, 178, 200, 1);
+    else retired.dot(x, y, RETIRED_RGB[0], RETIRED_RGB[1], RETIRED_RGB[2], 1);
   }
   retired.end();
 
-  T.ctx.fillStyle = "#ffcf6b";
+  T.ctx.fillStyle = `rgb(${LIVE_RGB[0]},${LIVE_RGB[1]},${LIVE_RGB[2]})`;
   if (r <= PIXEL_SIDE) {
     for (let i = 0; i < live.length; i += 2) {
       T.ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
@@ -2217,6 +2306,7 @@ function updateGap() {
   const mean = weighted / people;
   $("gapValue").textContent =
     `${Math.floor(mean / 3600)}時間${String(Math.round(mean % 3600 / 60)).padStart(2, "0")}分`;
+  markScale($("gapScaleReadout"), mean);
   const share = all ? people / all : 0;
   $("gapNote").innerHTML =
     `便がある ${Math.round(people).toLocaleString("ja-JP")} 人の平均。` +
@@ -2417,6 +2507,7 @@ async function readUrl() {
   select.onchange = () => loadDataset(manifest[+select.value]).catch(showError);
   select.style.display = manifest.length > 1 ? "" : "none";
   glInit();
+  paintLegendDots();
   resize();
   loadCredits();
   try {
