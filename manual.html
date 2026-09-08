@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>使い方 — 全国バス運行時間マップ</title>
+<style>
+  /* 地図と同じ色。マニュアルだけ別の見た目だと、説明している画面と
+     結びつかない。ライブラリもWebフォントも使わないのは本体と同じ方針。 */
+  :root {
+    --bg: #0a0d12;
+    --panel: #12171f;
+    --line: #232b36;
+    --text: #e8edf4;
+    --muted: #8896a8;
+    --faint: #6f7d90;
+    --live: #ffcf6b;
+    --accent: #6bb8ff;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.75 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 20px 96px; }
+  a { color: var(--accent); }
+
+  header { border-bottom: 1px solid var(--line); margin-bottom: 34px; padding: 44px 0 30px; }
+  h1 { margin: 0 0 6px; font-size: 27px; letter-spacing: .02em; }
+  header .lead { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  .open {
+    display: inline-block; background: var(--live); color: #06121e; font-weight: 700;
+    text-decoration: none; border-radius: 7px; padding: 9px 18px; font-size: 14px;
+  }
+  .open + .open { background: none; color: var(--muted); border: 1px solid var(--line);
+                  font-weight: 400; margin-left: 8px; }
+
+  nav { border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px;
+        background: var(--panel); margin-bottom: 40px; }
+  nav b { font-size: 12px; color: var(--muted); letter-spacing: .08em; }
+  nav ol { margin: 8px 0 0; padding-left: 20px; columns: 2; column-gap: 28px; font-size: 13.5px; }
+  nav li { margin: 2px 0; break-inside: avoid; }
+
+  h2 { margin: 52px 0 4px; font-size: 20px; letter-spacing: .02em;
+       border-top: 1px solid var(--line); padding-top: 30px; }
+  h2 .num { color: var(--faint); font-size: 14px; margin-right: 10px; font-variant-numeric: tabular-nums; }
+  h2:first-of-type { border-top: 0; }
+  h3 { margin: 30px 0 4px; font-size: 16px; }
+  p { margin: 12px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 5px 0; }
+  code { font-family: ui-monospace, "Consolas", monospace; font-size: 13px;
+         background: #171e28; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+
+  figure { margin: 20px 0 8px; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 8px; }
+  figcaption { color: var(--faint); font-size: 12.5px; margin-top: 7px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0;
+           border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 400; font-size: 12px; letter-spacing: .06em; }
+  td code { white-space: nowrap; }
+
+  /* 「言えないこと」は本文と同じ調子で流すと読み飛ばされる。 */
+  .caveat { border-left: 2px solid var(--live); background: #14171d;
+            padding: 12px 16px; margin: 20px 0; border-radius: 0 6px 6px 0; }
+  .caveat p { margin: 6px 0; font-size: 14px; }
+  .caveat b { color: var(--live); font-weight: 700; }
+
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+            vertical-align: -1px; margin-right: 6px; border: 1px solid rgba(255,255,255,.14); }
+
+  footer { border-top: 1px solid var(--line); margin-top: 60px; padding-top: 24px;
+           color: var(--faint); font-size: 12.5px; }
+
+  @media (max-width: 640px) {
+    body { font-size: 14.5px; }
+    .wrap { padding: 0 16px 64px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    nav ol { columns: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>使い方</h1>
+  <p class="lead">全国バス運行時間マップ — GTFSを公開している事業者のバスが、いつ・どこで使えるか</p>
+  <a class="open" href="./">地図を開く</a>
+  <a class="open" href="https://github.com/tyra0119/pj_japanmap">ソースコード</a>
+</header>
+
+<nav>
+  <b>目次</b>
+  <ol>
+    <li><a href="#quick">まず3つ</a></li>
+    <li><a href="#screen">画面の作り</a></li>
+    <li><a href="#move">動かす</a></li>
+    <li><a href="#modes">5つのモード</a></li>
+    <li><a href="#day">曜日と時刻</a></li>
+    <li><a href="#scope">範囲をしぼる</a></li>
+    <li><a href="#numbers">右の数字の意味</a></li>
+    <li><a href="#limits">この地図が答えないこと</a></li>
+    <li><a href="#url">URLで渡す</a></li>
+    <li><a href="#data">データの出どころ</a></li>
+    <li><a href="#env">動作環境と困ったとき</a></li>
+  </ol>
+</nav>
+
+<h2 id="quick"><span class="num">01</span>まず3つ</h2>
+
+<p>この地図が答えるのは「バスがあるか」ではなく <b>「その時刻に使えるか」</b> です。
+最初にこの3つだけ試せば、だいたい分かります。</p>
+
+<ol>
+  <li><b>下のスライダーを右へ動かす。</b> 22時を過ぎたあたりで、点が一気に消えます。</li>
+  <li><b>「休日の落差」を押す。</b> 平日は使えるのに日曜・祝日には1本も無い場所が出ます。</li>
+  <li><b>「年表」を押して ▶ を押す。</b> 同じ町の終バスが、改正ごとに早まっていきます。</li>
+</ol>
+
+<p>点が消えるのは「バスが廃止された」という意味ではありません。
+<b>その停留所の始発から終発までの外側に入った</b>、という意味です。
+判定は「始発 ≤ その時刻 ≤ 終発」の一つだけです。</p>
+
+<h2 id="screen"><span class="num">02</span>画面の作り</h2>
+
+<p>操作は3か所に集まっています。</p>
+
+<table>
+  <tr><th style="width:8em">左のパネル</th><td><b>何を見るか。</b> モードの切替、いま出ている色の凡例、範囲（都道府県）の選択、出典。</td></tr>
+  <tr><th>右のパネル</th><td><b>その結果。</b> 選んだ範囲・モード・時刻に対する数字。一番下に基準日とフィード数。</td></tr>
+  <tr><th>下の帯</th><td><b>いつ。</b> 時刻スライダーと曜日。年表モードでは、時刻の代わりに改正を送るスライダーになります。</td></tr>
+</table>
+
+<p>スマホなど横幅の狭い画面では、左のパネルが下に畳まれます。
+出典や都道府県一覧は <code>詳しく</code> を押すと開きます。</p>
+
+<h2 id="move"><span class="num">03</span>動かす</h2>
+
+<table>
+  <tr><th style="width:10em">移動</th><td>ドラッグ（スマホは1本指でなぞる）</td></tr>
+  <tr><th>拡大・縮小</th><td>ホイール（スマホは2本指のピンチ）</td></tr>
+  <tr><th>詳細を見る</th><td>点やセルにカーソルを合わせる</td></tr>
+</table>
+
+<p><b>カーソルを合わせたときの説明は、ある程度まで拡大しないと出ません。</b>
+全国を映したままでは1画素に何十件も重なっていて、どれを指したのか決められないためです。
+街が画面に収まるくらいまで寄せると出ます。</p>
+
+<p>出る内容はモードごとに違います。停留所モードではバス停の名前と始発・終バス、
+それ以外のモードでは <b>500mメッシュのセル</b> の内訳です。
+色を塗っているのがセルであってバス停ではないので、
+そこにバス停の名前を出すと「その時刻はそのバス停のもの」と読めてしまいます
+（セルの終発は徒歩500m圏で一番遅い便で、近くのバス停のものとは限りません）。</p>
+
+<figure>
+  <img src="manual/06-zoom.png" alt="東京都心を拡大した停留所モードの画面">
+  <figcaption>拡大すると点が大きくなり、1つずつ指せるようになる（東京・23:00）。
+    点の大きさは縮尺に対して連続に変わります。</figcaption>
+</figure>
+
+<h2 id="modes"><span class="num">04</span>5つのモード</h2>
+
+<p>左上の <code>地図に出すもの</code> で切り替えます。
+それぞれ<b>別の問いに答えている</b>ので、色の意味も右の数字も入れ替わります。
+いま出ている色の説明は、常に左のパネルに出ています。</p>
+
+<h3><span class="swatch" style="background:#ffcf6b"></span>停留所 — その時刻に動いているか</h3>
+
+<p>停留所を1点ずつ置き、<b>黄色＝その時刻は運行時間帯の中</b>、
+<b>薄いグレー＝運行時間外</b>で塗り分けます。スライダーを動かすと塗り替わります。</p>
+
+<figure>
+  <img src="manual/01-stops.png" alt="全国の停留所モード・平日23:20">
+  <figcaption>平日 23:20。灯っている停留所は 3,694 / 85,374、
+    その時刻に公共交通が使える場所に住む人は全人口の 7.6%。</figcaption>
+</figure>
+
+<h3>空白時間 — 1日のうち公共交通が無い時間</h3>
+
+<p>500mメッシュごとに <b>始発から終発までの「外側」の長さ</b>を色にします。
+6時間なら朝6時から24時まで動く町、20時間なら1日4時間しか便が無い場所です。
+両端は頭打ちで、6時間以下と20時間以上はそれぞれ同じ色になります。</p>
+
+<p><b>時刻では変わりません。</b> 場所の性質を見ているので、
+スライダーを動かしても地図は動きません（スライダーは薄く表示されます）。</p>
+
+<figure>
+  <img src="manual/02-gap.png" alt="全国の空白時間モード">
+  <figcaption>平日の全国平均は 9時間16分。これは<b>便がある場所</b>の平均で、
+    便が無い場所は分母に入っていません。</figcaption>
+</figure>
+
+<h3>休日の落差 — 平日と休日の差</h3>
+
+<p>同じ場所の空白時間が、<b>休日に何時間延びるか</b>を色にします。
+一番強い色は「休日は1本も無い」——平日は使えるのに、日曜・祝日には便が消える場所です。
+全国で 483万人がここに住んでいます。</p>
+
+<p>このモードだけ<b>曜日の切替が効きません。</b> 平日と休日を比べているものなので、
+どちらか一方を選ぶという操作に意味がないためです。</p>
+
+<figure>
+  <img src="manual/03-drop.png" alt="全国の休日の落差モード">
+  <figcaption>平日にも便が無い場所は塗っていません（比べようがないため）。</figcaption>
+</figure>
+
+<h3>変化 — 2つの版を比べる</h3>
+
+<p>過去の時刻表と今の時刻表を突き合わせ、<b>便が無くなった / 終発が早まった /
+遅くなった・増えた</b> を塗り分けます。左の選択で、どの比較を見るか切り替えます。</p>
+
+<p>比較には必ず注意書きが付きます。読む前にそこを見てください。
+たとえば「全国 前の改正との差」は、事業者ごとに1つ前の改正と比べたものなので、
+<b>間隔がばらばら</b>です（中央値186日、最短 −34日、最長885日）。「1年で」とは言えません。</p>
+
+<figure>
+  <img src="manual/04-change.png" alt="全国の変化モード">
+  <figcaption>横浜市営バス 2025-08-08 → 2026-07-27（354日）。終発が早まった場所には
+    264,213人が住み、早まり方は平均10分。比較は必ず両側を同じフィード集合にそろえてあります
+    ——片側にしか無い事業者を混ぜると、それだけで「増えた」「消えた」が出てしまうためです。</figcaption>
+</figure>
+
+<h3>年表 — 改正を古い順に送る</h3>
+
+<p>保存されている改正を1つずつ並べ、<b>最初の版と比べた差</b>を塗ります。
+下の ▶ で自動再生、スライダーで手送りできます。右のグラフは終発の人口加重平均の推移で、
+<b>前後から外れた版にはピンクの点</b>が付きます。</p>
+
+<p>各版は<b>その改正の施行日</b>で読んでいます。2023年の時刻表に今日の日付を尋ねれば
+「どこにも便が無い」と返ってくるので、そのままでは町からバスが消えた絵になってしまいます。</p>
+
+<figure>
+  <img src="manual/05-timeline.png" alt="京都バスの年表モード">
+  <figcaption>京都バス 49改正ぶん。終発の人口加重平均は 20:04 で、
+    起点（2023-03-31）から 47分早くなっています。</figcaption>
+</figure>
+
+<p>年表を作れるのは、過去の改正を保存している事業者だけです
+（京都バス・横浜市営バス・川崎鶴見臨港バス・西東京市はなバス）。
+版の数は事業者ごとに大きく違い、<b>1社1事業者の話であって全国の話ではありません。</b></p>
+
+<h2 id="day"><span class="num">05</span>曜日と時刻</h2>
+
+<p>曜日は <b>平日 / 土曜 / 休日</b> の3つ。<b>休日＝日曜と祝日</b>です
+（「日曜ダイヤ」しか書いていないフィードでも、文化の日の火曜日は休日として扱います）。</p>
+
+<p>パラメータを付けずに開いたときは、<b>いまの時刻・いまの曜日</b>から始まります。
+初期値であるあいだは、時計の下に「平日・いま」のように出ます。
+時刻か曜日を自分で動かすと消えます。</p>
+
+<p>スライダーは 4:00 から始まり、右端はデータが決めます（現在は 31:00）。
+時刻表の1日は 24時を超えて続くので、<b>25:30 は「翌日の1:30」ではなく
+「その日の深夜1時半」</b>です。深夜に開いた場合も、曜日は前日のもので始まります
+（日曜の 25:00 はまだ休日ダイヤ）。</p>
+
+<h2 id="scope"><span class="num">06</span>範囲をしぼる</h2>
+
+<p>左の <code>範囲</code> を開くと、都道府県が<b>空白時間の長い順</b>に並びます。
+クリックするとその県に寄り、右の数字もその県のものになります。
+戻すときは <code>全国に戻す</code>。</p>
+
+<div class="caveat">
+  <p><b>この順位を「交通が不便な県の順位」として読まないでください。</b></p>
+  <p>右端の「収録」が低い県は、バスが少ないのではなく、事業者がGTFSを公開していないことが
+    多いだけです。順位が測っているのは<b>データの整備度</b>であって、交通の水準ではありません。</p>
+</div>
+
+<p>一覧の色帯は、どのモードで見ていても<b>「空白時間」の目盛り</b>です。
+休日の落差を見ているときは、地図と別の意味の色になります（見出しにもそう書いてあります）。</p>
+
+<h2 id="numbers"><span class="num">07</span>右の数字の意味</h2>
+
+<table>
+  <tr><th style="width:11em">人口カバー率</th>
+      <td>その時刻に、<b>徒歩500m圏が始発から終発の間にある</b>人の割合。
+        分母は全人口で、便が無い場所に住む 7,693万人も含みます。</td></tr>
+  <tr><th>稼働中の停留所</th>
+      <td>その時刻に運行時間帯の中にある停留所の数 / 全停留所。
+        県をしぼると出ません（停留所の表は都道府県を持っていないため）。</td></tr>
+  <tr><th>使える人口の一日</th>
+      <td>横軸が時刻、縦軸が使える人口。<b>青い縦線がいま見ている時刻</b>です。
+        下に、最も増える30分と最も減る30分が出ます。</td></tr>
+  <tr><th>公共交通が無い時間</th>
+      <td>空白時間の平均。<b>便がある場所だけの平均</b>で、便が無い場所は入っていません。
+        帯の上の印が、いまの平均値の位置です。</td></tr>
+  <tr><th>休日に足を失う人</th>
+      <td>平日は便があるのに、休日には1本も無い場所に住む人の数。</td></tr>
+  <tr><th>終発の人口加重平均</th>
+      <td>年表モードで、その版の終発を人口で重みづけした平均。
+        人が多い場所の変化ほど強く効きます。</td></tr>
+</table>
+
+<p>パネルの一番下に、そのデータの<b>基準日・フィード数・標柱数と停留所数</b>が出ます。
+標柱（乗り場）を近さと名前でまとめたものが停留所です。</p>
+
+<h2 id="limits"><span class="num">08</span>この地図が答えないこと</h2>
+
+<p>数字が一人歩きするのが一番まずいので、<b>言えないことは画面にも出しています。</b>
+ここにまとめておきます。</p>
+
+<div class="caveat">
+  <p><b>1. カバー率は「データが公開されている範囲」の話です。</b><br>
+    GTFSを公開していない事業者のバスは、走っていても地図に出ません。
+    交通の量そのものを測った数字ではありません。</p>
+
+  <p><b>2. 灰色の「便が無い」には「データが無い」が混ざります。</b><br>
+    地図の上で両者は区別できません。人口ベースの収録率は現在 39% です。</p>
+
+  <p><b>3. 県別の順位はデータ整備度の順位です。</b><br>
+    交通の順位ではありません。</p>
+
+  <p><b>4. 「バスがある / 無い」ではありません。</b><br>
+    見ているのは始発と終発だけです。日中に何本あるか、
+    その便に乗って目的地へ行けるかは、この地図では分かりません。</p>
+
+  <p><b>5. 鉄道は入っていません。</b><br>
+    バスの時刻表だけです。終電の後にバスがあるか、という問いには答えられません。</p>
+
+  <p><b>6. 年表と変化は、その事業者・その比較の話です。</b><br>
+    全国が同じように動いたという意味ではありません。</p>
+</div>
+
+<p>フィードの中身も、こちらの判断で書き換えてはいません。
+たとえば根室には終発 30:45 の停留所が1件あります。札幌 22:00 発の夜行が着く便で、
+終着の1つ手前に「乗車可」のまま載っています。同じ便の他の停留所はすべて降車専用なので
+入力漏れに見えますが、<b>フィードが「乗れる」と書いている以上そのまま扱っています。</b>
+全国で1件のために推測で消すほうが危ないためです。</p>
+
+<h2 id="url"><span class="num">09</span>URLで渡す</h2>
+
+<p>画面を操作すると<b>アドレス欄が追随します。</b>
+「休日の落差の全国」を口で説明する代わりに、そのURLを送れば同じ絵が開きます。</p>
+
+<table>
+  <tr><th style="width:4em"></th><th style="width:11em">意味</th><th>値</th></tr>
+  <tr><td><code>m</code></td><td>モード</td><td><code>stops</code> / <code>gap</code> / <code>drop</code> / <code>change</code> / <code>timeline</code></td></tr>
+  <tr><td><code>t</code></td><td>時刻（秒）</td><td><code>84000</code> = 23:20。<code>m=stops</code> のときだけ効く</td></tr>
+  <tr><td><code>d</code></td><td>曜日</td><td><code>wd</code> 平日 / <code>sa</code> 土曜 / <code>ho</code> 休日</td></tr>
+  <tr><td><code>p</code></td><td>都道府県コード</td><td><code>13</code> = 東京</td></tr>
+  <tr><td><code>s</code></td><td>年表の事業者</td><td>一覧の順（<code>0</code> = 京都バス）</td></tr>
+  <tr><td><code>g</code></td><td>年表の世代</td><td><code>48</code> = 49世代目</td></tr>
+  <tr><td><code>c</code></td><td>比較の版</td><td>一覧の順</td></tr>
+  <tr><td><code>ll</code></td><td>緯度,経度,縮尺</td><td><code>36.5000,137.5000,55</code> = 全国</td></tr>
+</table>
+
+<p>上のどれか1つでも付いていれば、<code>d</code> を省いても平日で開きます
+（曜日を書き出していなかった頃に配られたURLが、日曜に別の絵にならないように）。
+何も付いていないときだけ、いまの時刻・いまの曜日で始まります。</p>
+
+<h2 id="data"><span class="num">10</span>データの出どころ</h2>
+
+<p>地図の中の <code>出典とライセンス</code> に、実際に読み込んだフィードの一覧が出ます。
+大きくは次の5つです。</p>
+
+<ul>
+  <li><b>公共交通オープンデータセンター（ODPT）</b> — 22事業者。うち5事業者
+    （東急・相鉄・神奈川中央交通・国際興業・東武バス）はGTFSが無く、
+    JSON-LDの時刻表から変換しています</li>
+  <li><b>GTFSデータリポジトリ（api.gtfs-data.jp）</b> — 全国のGTFS-JP</li>
+  <li><b>国土数値情報 P11「バス停留所」</b>（国土交通省）— 座標を持たない事業者の補完</li>
+  <li><b>令和2年国勢調査 人口及び世帯</b>（e-Stat 統計地理情報システム）— 500mメッシュ人口</li>
+  <li><b>地理院タイル（淡色地図）</b>（国土地理院）— 背景地図</li>
+</ul>
+
+<p>合計 644フィード / 506事業者・団体 / 160,462標柱 → 86,918停留所（基準日 2026-09-07）。
+背景地図だけがネットワークを使い、それが落ちても点は描画されます。</p>
+
+<h2 id="env"><span class="num">11</span>動作環境と困ったとき</h2>
+
+<p>ブラウザだけで動きます。インストール不要・アカウント不要・無料。
+Chrome / Safari / Firefox / Edge の現行版、スマホでも同じものが開きます。</p>
+
+<table>
+  <tr><th style="width:14em">最初の表示が遅い</th>
+      <td>初回は約3MBを読みます。2回目からはブラウザの控えが効きます。</td></tr>
+  <tr><th>点にカーソルを合わせても何も出ない</th>
+      <td>拡大が足りません。街が画面に収まるくらいまで寄せてください。</td></tr>
+  <tr><th>スライダーを動かしても地図が変わらない</th>
+      <td>空白時間・休日の落差・変化のモードでは、時刻で変わりません（場所の性質を見ているため）。
+        スライダーが薄くなっているのがその印です。</td></tr>
+  <tr><th>年表で色が消える版がある</th>
+      <td>その版にその曜日のダイヤが入っていません。左のパネルに理由が出ます。</td></tr>
+  <tr><th>自分の町が真っ暗</th>
+      <td>便が無いのか、事業者がGTFSを公開していないのか、地図の上では区別できません。
+        <a href="#limits">前者と後者は混ざっています</a>。</td></tr>
+</table>
+
+<footer>
+  <p>全国バス運行時間マップ ／
+    <a href="./">地図</a> ・
+    <a href="https://github.com/tyra0119/pj_japanmap">ソースコードと作り方</a></p>
+  <p>出典とライセンスは地図の画面内に全件を掲載しています。
+    背景地図：地理院タイル（国土地理院）。人口：令和2年国勢調査（e-Stat）を加工して作成。
+    バス停留所：国土数値情報（国土交通省）を加工して作成。</p>
+</footer>
+
+</div>
+</body>
+</html>

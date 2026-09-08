@@ -111,9 +111,10 @@
                 cursor: pointer; }
   button.wide .caret { color: var(--muted); transition: transform .12s; }
   button.wide[aria-expanded="true"] .caret { transform: rotate(180deg); }
-  #scopeClear, #creditToggle, #creditClose {
+  #scopeClear, #creditToggle, #creditClose, #manualLink {
       background: none; border: 1px solid var(--line); color: var(--muted);
       border-radius: 5px; padding: 2px 7px; font: inherit; font-size: 10px; cursor: pointer; }
+  #manualLink { text-decoration: none; margin-left: 5px; display: inline-block; }
   #prefWrap { display: flex; flex-direction: column; min-height: 0; margin-top: 7px; }
   /* An author `display` beats the UA rule behind the `hidden` attribute, so
      anything laid out with flex has to opt back out of it explicitly. */
@@ -295,7 +296,8 @@
 
   </div>
 
-  <div class="foot"><button id="creditToggle" type="button">出典とライセンス</button></div>
+  <div class="foot"><button id="creditToggle" type="button">出典とライセンス</button><!--
+    --><a id="manualLink" href="manual.html">使い方</a></div>
   <button class="more" id="moreToggle" type="button" aria-expanded="false">詳しく</button>
 </div>
 
