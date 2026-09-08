@@ -691,7 +691,9 @@ function ensureNames() {
 let stopProfiles = {};
 function stopProfile() {
   const data = state.data;
-  if (!data || !data.times[state.bucket]) return null;
+  // fitClock がまだ走っていない＝目盛りの数が決まっていない。読み込み中に
+  // 地図タイルが届いて render が回ると、ここに来る。
+  if (!SHARE_SLOTS || !data || !data.times[state.bucket]) return null;
   const hit = stopProfiles[state.bucket];
   if (hit) return hit;
   const { first, last } = data.times[state.bucket];
@@ -893,7 +895,26 @@ function sizeOverlay(w, h) {
   overlayBuf = new Uint32Array(overlayImg.data.buffer);
 }
 
-const PIXEL_SIDE = 2.5;
+// 1画素で置くか、大きさのある四角で置くかの境目。大きさそのものは下の
+// stopSize / cellSize が連続に決めるので、ここは「描き方」だけを分ける。
+const PIXEL_SIDE = 1.2;
+
+// 点の大きさ（デバイス画素）。拡大に対して連続に変える。
+//
+// 以前は「2.5px以下なら1画素、そうでなければ side」と、**描き方の分岐で
+// 大きさまで決めていた**。境目をまたぐと停留所が1画素から5画素へ一気に
+// 太り、拡大の途中で見た目が飛んだ。大きさは大きさとして別に決める。
+function stopSize() {
+  const rr = Math.min(3.2, Math.max(0.67, state.view.scale / 100));   // CSS px
+  // 画素より小さい四角は、GL では薄くぼやけて消える。1画素で底を打つ。
+  return { retired: Math.max(1, rr * DPR), live: Math.max(1.2, rr * 2 * DPR) };
+}
+
+// 1セルは 500m ＝ 経度 0.0045 度ぶん。全国表示では 0.4 画素しかないので
+// 1画素で底を打つ。
+function cellSize() {
+  return Math.max(1, 0.0045 * state.view.scale * DPR);
+}
 
 function beginLayer(side, alpha) {
   const T = target();
@@ -1014,9 +1035,7 @@ function drawGapLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.times[state.bucket]) return;
   const { first, last } = mesh.times[state.bucket];
-  // One cell is 500 m; below a pixel it is not worth a fill call, but the
-  // cells still have to cover the ground or the layer looks like noise.
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
+  const side = cellSize();
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const mx = mesh.lon, mys = mesh.my;
   const brush = beginLayer(side, 0.85);
@@ -1070,7 +1089,7 @@ function holidayDrop(i) {
 function drawDropLayer() {
   const mesh = state.mesh;
   if (!mesh || !mesh.times.ho) return;
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
+  const side = cellSize();
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const mx = mesh.lon, mys = mesh.my;
   const brush = beginLayer(side, 0.85);
@@ -1184,7 +1203,7 @@ function changeOf(row) {
 function drawChangeLayer() {
   const mesh = state.mesh;
   if (!mesh || !changeData) return;
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR * 1.6;
+  const side = cellSize() * 1.6;
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const brush = beginLayer(side, 0.9);
   for (const [n, row] of changeData.byCell) {
@@ -1322,7 +1341,7 @@ function drawTimelineLayer() {
   if (!series) return;
   const blank = eraBlank(series, state.era);
   const dpr = DPR;
-  const side = Math.max(2, 0.0045 * state.view.scale) * dpr * 1.6;
+  const side = Math.max(2, cellSize() * 1.6);
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   if (!series.my) {
     series.my = new Float32Array(series.cells.map((c) => mercY(c[1])));
@@ -1707,20 +1726,18 @@ function glDraw() {
   gl.bindTexture(gl.TEXTURE_2D, S.tex);
   gl.uniform1i(u.u_lut, 0);
   if (state.mode === "stops") {
-    const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * DPR;
-    // Canvas の経路は、点が2.5px以下なら1画素だけ置く。GL でも同じにしないと、
-    // 全国表示で8.7万点が4px角に太り、暗いはずの地図が薄く塗り潰される。
-    gl.uniform1f(u.u_side, r > PIXEL_SIDE ? r * 2 : 1);
-    gl.uniform1i(u.u_round, r > PIXEL_SIDE ? 1 : 0);
-    // 消えた点を先に、動いている点をその上に。
+    const size = stopSize();
+    // 消えた点を先に、動いている点をその上に。大きさが違うので都度渡す。
+    gl.uniform1f(u.u_side, size.retired);
+    gl.uniform1i(u.u_round, 0);
     gl.uniform1i(u.u_mode, 2);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
+    gl.uniform1f(u.u_side, size.live);
+    gl.uniform1i(u.u_round, size.live > 3 ? 1 : 0);
     gl.uniform1i(u.u_mode, 3);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
   } else {
-    // メッシュも同じ。1セルは500mで、全国表示では0.4画素しかない。
-    const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
-    gl.uniform1f(u.u_side, side > PIXEL_SIDE ? side : 1);
+    gl.uniform1f(u.u_side, cellSize());
     gl.uniform1i(u.u_round, 0);
     gl.uniform1i(u.u_mode, state.mode === "gap" ? 0 : 1);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
@@ -1841,7 +1858,7 @@ function render() {
   if (!data) return;
   const counts = state.mode === "stops" ? stopProfile() : null;
   const slot = Math.max(0, Math.min(SHARE_SLOTS - 1, Math.round((state.t - MIN_T) / SHARE_STEP)));
-  updateReadout(counts ? counts.live[slot] : 0, counts ? counts.served : 0,
+  updateReadout(counts ? (counts.live[slot] || 0) : 0, counts ? counts.served : 0,
                 populationShare(state.t));
 }
 
@@ -1852,7 +1869,7 @@ const RETIRED_RGB = [160, 178, 200];     // 運行時間外（半透明で置く
 function drawStopsLayer() {
   const data = state.data;
   const t = state.t;
-  const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * DPR;
+  const size = stopSize();
   const T = target();
   const times = data.times[state.bucket];
   if (!times) return;
@@ -1867,7 +1884,7 @@ function drawStopsLayer() {
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const lons = data.lons, mys = data.my;
   const firsts = times.first, lasts = times.last;
-  const retired = beginLayer(r, 0.28);
+  const retired = beginLayer(size.retired, 0.28);
   for (let i = 0; i < data.n; i++) {
     const last = lasts[i];
     if (last < 0) continue;                     // no service this day type
@@ -1883,15 +1900,16 @@ function drawStopsLayer() {
   retired.end();
 
   T.ctx.fillStyle = `rgb(${LIVE_RGB[0]},${LIVE_RGB[1]},${LIVE_RGB[2]})`;
-  if (r <= PIXEL_SIDE) {
+  const d = size.live;
+  if (d <= 3) {
     for (let i = 0; i < live.length; i += 2) {
-      T.ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
+      T.ctx.fillRect(live[i] - d / 2, live[i + 1] - d / 2, d, d);
     }
   } else {
     T.ctx.beginPath();
     for (let i = 0; i < live.length; i += 2) {
-      T.ctx.moveTo(live[i] + r, live[i + 1]);
-      T.ctx.arc(live[i], live[i + 1], r, 0, Math.PI * 2);
+      T.ctx.moveTo(live[i] + d / 2, live[i + 1]);
+      T.ctx.arc(live[i], live[i + 1], d / 2, 0, Math.PI * 2);
     }
     T.ctx.fill();
   }
@@ -1904,7 +1922,7 @@ const SHARE_STEP = 300;
 function shareProfile() {
   const mesh = state.mesh;
   const idx = scopedCells();
-  if (!mesh || !idx || !idx.length || !mesh.times[state.bucket]) return null;
+  if (!SHARE_SLOTS || !mesh || !idx || !idx.length || !mesh.times[state.bucket]) return null;
   const key = `${dataEpoch}|${state.bucket}|${state.prefFilter}`;
   if (shareCache.key === key) return shareCache.value;
 
