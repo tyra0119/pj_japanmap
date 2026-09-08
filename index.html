@@ -1708,7 +1708,9 @@ function glDraw() {
   gl.uniform1i(u.u_lut, 0);
   if (state.mode === "stops") {
     const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * DPR;
-    gl.uniform1f(u.u_side, r * 2);
+    // Canvas の経路は、点が2.5px以下なら1画素だけ置く。GL でも同じにしないと、
+    // 全国表示で8.7万点が4px角に太り、暗いはずの地図が薄く塗り潰される。
+    gl.uniform1f(u.u_side, r > PIXEL_SIDE ? r * 2 : 1);
     gl.uniform1i(u.u_round, r > PIXEL_SIDE ? 1 : 0);
     // 消えた点を先に、動いている点をその上に。
     gl.uniform1i(u.u_mode, 2);
@@ -1716,7 +1718,9 @@ function glDraw() {
     gl.uniform1i(u.u_mode, 3);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
   } else {
-    gl.uniform1f(u.u_side, Math.max(1.5, 0.0045 * state.view.scale) * DPR);
+    // メッシュも同じ。1セルは500mで、全国表示では0.4画素しかない。
+    const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
+    gl.uniform1f(u.u_side, side > PIXEL_SIDE ? side : 1);
     gl.uniform1i(u.u_round, 0);
     gl.uniform1i(u.u_mode, state.mode === "gap" ? 0 : 1);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
