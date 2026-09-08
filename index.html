@@ -24,6 +24,8 @@
     overflow: hidden;
   }
   #map { position: absolute; inset: 0; cursor: grab; }
+  /* データ層は WebGL の別キャンバス。タイルの上、パネルの下。 */
+  #gl { position: absolute; inset: 0; pointer-events: none; }
   #map.dragging { cursor: grabbing; }
 
   .panel {
@@ -158,6 +160,7 @@
 </head>
 <body>
 <canvas id="map"></canvas>
+<canvas id="gl"></canvas>
 <div id="status">読み込み中…</div>
 <div id="tip"></div>
 
@@ -318,7 +321,7 @@ function readDpr() { DPR = Math.min(devicePixelRatio || 1, 1.5); }
 readDpr();
 
 const state = {
-  data: null, mesh: null, bounds: null, field: {}, meshField: {}, bucket: "wd",
+  data: null, mesh: null, bounds: null, bucket: "wd",
   // "stops" | "gap" | "drop" — 地図が答えている問いそのもの。
   mode: "stops",
   // null = 全国。都道府県コードを入れると読み取り欄がその県だけになる。
@@ -379,36 +382,102 @@ async function loadManifest() {
   return [{ label: "最新", path: "stops.json" }];
 }
 
-// Population lives on mesh cells, not on stops. A stop has no population, so
-// weighting stops would answer a different question -- and would drop the
-// people with no bus at all out of the denominator entirely, which is exactly
-// the group the map exists to show.
-async function loadMesh(path) {
+/* ---------- 列指向のデータ ---------- */
+// 公開ファイルは pipeline.binpack が書く列ごとのバイナリ。JSON だと 46万セルを
+// 46万個の配列に起こすことになり、それだけでヒープ150MB・パースに時間が
+// かかった。列のまま TypedArray に載せれば、パースは無く、そのまま GPU の
+// バッファにもなる。JSON しか無い古い公開物のために、同じ形に起こす読み方も残す。
+const DTYPES = { u8: Uint8Array, u16: Uint16Array, u32: Uint32Array, i32: Int32Array, f32: Float32Array };
+
+async function fetchColumns(path) {
+  const res = await fetch(path, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${path}: ${res.status}`);
+  const buf = await res.arrayBuffer();
+  const magic = String.fromCharCode(...new Uint8Array(buf, 0, 4));
+  if (magic !== "JMB1") throw new Error(`${path}: not a column file`);
+  const headLen = new DataView(buf).getUint32(4, true);
+  const header = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, headLen)));
+  const base = 8 + headLen;
+  const col = (name) => {
+    const c = header.columns.find((x) => x.name === name);
+    if (!c) return null;
+    const T = DTYPES[c.dtype];
+    return new T(buf, base + c.offset, c.bytes / T.BYTES_PER_ELEMENT);
+  };
+  return { header, col };
+}
+
+// null を -1 にした Int32Array。JSON の行から列を起こすときに使う。
+function timesColumn(rows, i) {
+  const out = new Int32Array(rows.length);
+  for (let n = 0; n < rows.length; n++) {
+    const v = rows[n][i];
+    out[n] = (v === null || v === undefined) ? -1 : v;
+  }
+  return out;
+}
+
+function mercColumn(lats) {
+  const out = new Float32Array(lats.length);
+  for (let i = 0; i < lats.length; i++) out[i] = mercY(lats[i]);
+  return out;
+}
+
+// メッシュ人口の読み込み。人口はセルにあり、停留所には無い。
+// 停留所に人口を持たせると「バスが1本も無い人」が分母から消える。
+async function loadMesh(entry) {
   state.mesh = null;
   dataEpoch += 1;
   lastAggKey = null;
   curveCache = null;
   prefCache = null;
-  if (!path) return;
+  if (!entry || !(entry.mesh_bin || entry.mesh)) return;
   try {
-    const res = await fetch(path, { cache: "no-store" });
-    if (!res.ok) return;
-    const mesh = await res.json();
-    state.meshField = {};
-    mesh.fields.forEach((name, i) => { state.meshField[name] = i; });
-    const pi = state.meshField.pop;
-    mesh.total = mesh.cells.reduce((sum, c) => sum + (c[pi] || 0), 0);
-    // Projected once here rather than 466,145 times per frame.
-    const la = state.meshField.lat, lo = state.meshField.lon;
-    mesh.mx = new Float32Array(mesh.cells.length);
-    mesh.my = new Float32Array(mesh.cells.length);
-    for (let i = 0; i < mesh.cells.length; i++) {
-      mesh.mx[i] = mesh.cells[i][lo];
-      mesh.my[i] = mercY(mesh.cells[i][la]);
+    let mesh;
+    if (entry.mesh_bin) {
+      const { header, col } = await fetchColumns(entry.mesh_bin);
+      const n = header.count;
+      const li = col("lat_i"), lo = col("lon_i");
+      const lat = new Float32Array(n), lon = new Float32Array(n);
+      for (let i = 0; i < n; i++) { lat[i] = (li[i] + 0.5) / 240; lon[i] = (lo[i] + 0.5) / 160; }
+      const popRaw = col("pop");
+      const pop = new Float32Array(popRaw);
+      mesh = { n, lat, lon, pop, pref: col("pref"), buckets: header.buckets,
+               meta: header.meta || {}, times: {} };
+      for (const b of header.buckets) {
+        mesh.times[b] = { first: col(`${b}_first`), last: col(`${b}_last`) };
+      }
+    } else {
+      const res = await fetch(entry.mesh, { cache: "no-store" });
+      if (!res.ok) return;
+      const json = await res.json();
+      const f = {};
+      json.fields.forEach((name, i) => { f[name] = i; });
+      const rows = json.cells, n = rows.length;
+      const lat = new Float32Array(n), lon = new Float32Array(n), pop = new Float32Array(n);
+      const pref = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        lat[i] = rows[i][f.lat]; lon[i] = rows[i][f.lon]; pop[i] = rows[i][f.pop] || 0;
+        pref[i] = parseInt(rows[i][f.pref], 10) || 0;
+      }
+      mesh = { n, lat, lon, pop, pref, buckets: json.buckets, meta: json.meta || {}, times: {} };
+      for (const b of json.buckets) {
+        mesh.times[b] = { first: timesColumn(rows, f[`${b}_first`]),
+                          last: timesColumn(rows, f[`${b}_last`]) };
+      }
     }
+    mesh.my = mercColumn(mesh.lat);
+    let total = 0;
+    for (let i = 0; i < mesh.n; i++) total += mesh.pop[i];
+    mesh.total = total;
+    // 「全国」のときの添字。県で絞ったときと同じ形で回せる。
+    mesh.all = new Uint32Array(mesh.n);
+    for (let i = 0; i < mesh.n; i++) mesh.all[i] = i;
     state.mesh = mesh;
+    glUpload("mesh", mesh);
   } catch (e) { /* the stop-count readout still works without it */ }
 }
+
 
 // The view starts on the whole country, but a build is normally one
 // prefecture: without this it lands as a smudge of pixels in the middle of an
@@ -460,8 +529,7 @@ function outlyingTrim(points, total, share = 0.01) {
 }
 
 function boundsOf(data, mesh) {
-  const cells = mesh && mesh.cells && mesh.cells.length ? mesh.cells : null;
-  if (!cells) {
+  if (!mesh || !mesh.n) {
     let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
     for (let i = 0; i < data.lats.length; i++) {
       const lat = data.lats[i], lon = data.lons[i];
@@ -472,14 +540,13 @@ function boundsOf(data, mesh) {
     }
     return minLat > maxLat ? null : { minLat, maxLat, minLon, maxLon };
   }
-  const la = state.meshField.lat, lo = state.meshField.lon, pi = state.meshField.pop;
   const lats = [], lons = [];
   let total = 0;
-  for (const c of cells) {
-    const pop = c[pi] || 0;
+  for (let i = 0; i < mesh.n; i++) {
+    const pop = mesh.pop[i];
     total += pop;
-    lats.push([c[la], pop]);
-    lons.push([c[lo], pop]);
+    lats.push([mesh.lat[i], pop]);
+    lons.push([mesh.lon[i], pop]);
   }
   if (!lats.length) return null;
   const [minLat, maxLat] = trimIsolatedTail(lats, total);
@@ -508,41 +575,39 @@ function fitTo(b) {
   state.view = { lat, lon, scale: Math.max(8, Math.min(60000, scale)) };
 }
 
-async function loadDataset(path, meshPath) {
+async function loadDataset(entry) {
   $("status").style.display = "grid";
-  $("status").textContent = `${path} を読み込み中…`;
-  const res = await fetch(path, { cache: "no-store" });
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
-  const data = await res.json();
-
-  state.field = {};
-  data.fields.forEach((name, i) => { state.field[name] = i; });
-  data.lats = new Float32Array(data.stops.length);
-  data.lons = new Float32Array(data.stops.length);
-  data.my = new Float32Array(data.stops.length);
-  const li = state.field.lat, oi = state.field.lon;
-  for (let i = 0; i < data.stops.length; i++) {
-    data.lats[i] = data.stops[i][li];
-    data.lons[i] = data.stops[i][oi];
-    data.my[i] = mercY(data.lats[i]);
-  }
-  // 始発・終発も曜日ごとに数値の配列にしておく。8万7千行の配列の配列を
-  // 毎フレーム引くのと、Int32Array を引くのとでは速さが違う。-1 は運行なし。
-  data.times = {};
-  for (const b of ["wd", "sa", "ho"]) {
-    const fi = state.field[`${b}_first_dep`], la = state.field[`${b}_last_dep`];
-    if (fi === undefined || la === undefined) continue;
-    const first = new Int32Array(data.stops.length);
-    const last = new Int32Array(data.stops.length);
-    for (let i = 0; i < data.stops.length; i++) {
-      const f = data.stops[i][fi], l = data.stops[i][la];
-      first[i] = (f === null || f === undefined) ? -1 : f;
-      last[i] = (l === null || l === undefined) ? -1 : l;
+  $("status").textContent = `${entry.label || entry.bin || entry.path} を読み込み中…`;
+  let data;
+  if (entry.bin) {
+    const { header, col } = await fetchColumns(entry.bin);
+    data = { n: header.count, lats: col("lat"), lons: col("lon"), poles: col("poles"),
+             buckets: header.buckets, bucket_labels: header.bucket_labels || {},
+             meta: header.meta || {}, times: {}, names: null, namesPath: entry.names };
+    for (const b of header.buckets) {
+      data.times[b] = { first: col(`${b}_first`), last: col(`${b}_last`) };
     }
-    data.times[b] = { first, last };
+  } else {
+    const res = await fetch(entry.path, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${entry.path}: ${res.status}`);
+    const json = await res.json();
+    const f = {};
+    json.fields.forEach((name, i) => { f[name] = i; });
+    const rows = json.stops, n = rows.length;
+    data = { n, lats: new Float32Array(n), lons: new Float32Array(n),
+             buckets: json.buckets, bucket_labels: json.bucket_labels || {},
+             meta: json.meta || {}, times: {}, names: rows.map((r) => r[f.name]), namesPath: null };
+    for (let i = 0; i < n; i++) { data.lats[i] = rows[i][f.lat]; data.lons[i] = rows[i][f.lon]; }
+    for (const b of json.buckets) {
+      data.times[b] = { first: timesColumn(rows, f[`${b}_first_dep`]),
+                        last: timesColumn(rows, f[`${b}_last_dep`]) };
+    }
   }
+  data.my = mercColumn(data.lats);
   state.data = data;
-  await loadMesh(meshPath || path.replace(/stops(-[^/]*)?\.json$/, "mesh$1.json"));
+  stopProfiles = {};
+  glUpload("stops", data);
+  await loadMesh(entry);
   await loadChangeList();
   await loadTimelineList();
   // Refit only when the new dataset describes somewhere else, so switching to
@@ -553,6 +618,47 @@ async function loadDataset(path, meshPath) {
   buildBucketButtons(data);
   $("status").style.display = "none";
   render();
+}
+
+// 名前は 1.2MB あって、ツールチップで1つずつしか読まない。最初に拡大して
+// 停留所に触れたときに取りに行く。
+let namesLoading = null;
+function ensureNames() {
+  const data = state.data;
+  if (!data || data.names || !data.namesPath || namesLoading) return;
+  namesLoading = fetch(data.namesPath, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((names) => { if (state.data === data) data.names = names; })
+    .catch(() => {})
+    .finally(() => { namesLoading = null; });
+}
+
+// 停留所の「動いている数」も時刻で数え直さない。人口と同じ差分配列。
+let stopProfiles = {};
+function stopProfile() {
+  const data = state.data;
+  if (!data || !data.times[state.bucket]) return null;
+  const hit = stopProfiles[state.bucket];
+  if (hit) return hit;
+  const { first, last } = data.times[state.bucket];
+  const delta = new Int32Array(SHARE_SLOTS + 1);
+  let served = 0;
+  const slot = (v) => (v - MIN_T) / SHARE_STEP;
+  for (let i = 0; i < data.n; i++) {
+    const l = last[i];
+    if (l < 0) continue;
+    served++;
+    const f = first[i];
+    const from = Math.max(0, f < 0 ? 0 : Math.ceil(slot(f)));
+    const to = Math.min(SHARE_SLOTS - 1, Math.floor(slot(l)));
+    if (to < from) continue;
+    delta[from] += 1;
+    delta[to + 1] -= 1;
+  }
+  const live = new Int32Array(SHARE_SLOTS);
+  let run = 0;
+  for (let i = 0; i < SHARE_SLOTS; i++) { run += delta[i]; live[i] = run; }
+  return (stopProfiles[state.bucket] = { live, served });
 }
 
 function buildBucketButtons(data) {
@@ -584,8 +690,8 @@ function buildBucketButtons(data) {
 // too -- 1.1% at 05:00, 35% at 06:00, 90% at 08:00 -- and leaves the evening
 // collapse exactly as it was.
 function inService(first, last, t) {
-  if (last === null || last === undefined) return false;
-  if (first === null || first === undefined) return t <= last;
+  if (last === null || last === undefined || last < 0) return false;
+  if (first === null || first === undefined || first < 0) return t <= last;
   return first <= t && t <= last;
 }
 
@@ -596,8 +702,8 @@ function inService(first, last, t) {
 // day with nothing" -- rather than a clock time the reader has to interpret,
 // and unlike the last-bus time it does not move with the slider.
 function gapSeconds(first, last) {
-  if (first === null || first === undefined) return null;
-  if (last === null || last === undefined) return null;
+  if (first === null || first === undefined || first < 0) return null;
+  if (last === null || last === undefined || last < 0) return null;
   if (last < first) return null;
   return Math.max(0, 86400 - (last - first));
 }
@@ -778,24 +884,20 @@ function drawCachedLayer(draw) {
 
 function drawGapLayer() {
   const mesh = state.mesh;
-  if (!mesh || !mesh.cells) return;
-  const dpr = DPR;
-  const fi = state.meshField[`${state.bucket}_first`];
-  const li = state.meshField[`${state.bucket}_last`];
-  if (fi === undefined || li === undefined) return;
+  if (!mesh || !mesh.times[state.bucket]) return;
+  const { first, last } = mesh.times[state.bucket];
   // One cell is 500 m; below a pixel it is not worth a fill call, but the
   // cells still have to cover the ground or the layer looks like noise.
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
   const { k, cx, cy, w, h, lon, my } = viewTransform();
-  const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
+  const mx = mesh.lon, mys = mesh.my;
   const brush = beginLayer(side, 0.85);
-  for (let i = 0; i < cells.length; i++) {
+  for (let i = 0; i < mesh.n; i++) {
     const x = cx + (mx[i] - lon) * k;
     if (x < -side || x > w + side) continue;
     const y = cy - (mys[i] - my) * k;
     if (y < -side || y > h + side) continue;
-    const cell = cells[i];
-    const gap = gapSeconds(cell[fi], cell[li]);
+    const gap = gapSeconds(first[i], last[i]);
     const rgb = gap === null ? NO_SERVICE_RGB : gapColor(gap);
     brush.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
   }
@@ -828,30 +930,28 @@ function dropColor(extra) {
 }
 
 // null = 平日に便が無いので比べようがない。"none" = 休日は1本も無い。
-function holidayDrop(cell) {
-  const wf = state.meshField.wd_first, wl = state.meshField.wd_last;
-  const hf = state.meshField.ho_first, hl = state.meshField.ho_last;
-  const weekday = gapSeconds(cell[wf], cell[wl]);
+function holidayDrop(i) {
+  const m = state.mesh;
+  const weekday = gapSeconds(m.times.wd.first[i], m.times.wd.last[i]);
   if (weekday === null) return null;
-  const holiday = gapSeconds(cell[hf], cell[hl]);
+  const holiday = gapSeconds(m.times.ho.first[i], m.times.ho.last[i]);
   if (holiday === null) return "none";
   return Math.max(0, holiday - weekday);
 }
 
 function drawDropLayer() {
   const mesh = state.mesh;
-  if (!mesh || !mesh.cells) return;
-  const dpr = DPR;
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr;
+  if (!mesh || !mesh.times.ho) return;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR;
   const { k, cx, cy, w, h, lon, my } = viewTransform();
-  const mx = mesh.mx, mys = mesh.my, cells = mesh.cells;
+  const mx = mesh.lon, mys = mesh.my;
   const brush = beginLayer(side, 0.85);
-  for (let i = 0; i < cells.length; i++) {
+  for (let i = 0; i < mesh.n; i++) {
     const x = cx + (mx[i] - lon) * k;
     if (x < -side || x > w + side) continue;
     const y = cy - (mys[i] - my) * k;
     if (y < -side || y > h + side) continue;
-    const drop = holidayDrop(cells[i]);
+    const drop = holidayDrop(i);
     if (drop === null) continue;
     const rgb = drop === "none" ? DROP_NONE_RGB : dropColor(drop);
     brush.dot(x, y, rgb[0], rgb[1], rgb[2], 1);
@@ -860,18 +960,18 @@ function drawDropLayer() {
 }
 
 function updateDrop() {
-  const cells = scopedCells();
+  const idx = scopedCells();
   const box = $("dropMetric");
-  if (!cells || state.meshField.ho_last === undefined || state.mode !== "drop") {
+  if (!idx || !state.mesh.times.ho || state.mode !== "drop") {
     box.hidden = true;
     return;
   }
-  const pi = state.meshField.pop;
+  const pops = state.mesh.pop;
   let weekday = 0, none = 0, worse = 0, extra = 0;
-  for (const cell of cells) {
-    const drop = holidayDrop(cell);
+  for (const i of idx) {
+    const drop = holidayDrop(i);
     if (drop === null) continue;
-    const pop = cell[pi] || 0;
+    const pop = pops[i];
     weekday += pop;
     if (drop === "none") { none += pop; continue; }
     if (drop > 0) { worse += pop; extra += pop * drop; }
@@ -955,14 +1055,13 @@ function changeOf(row) {
 
 function drawChangeLayer() {
   const mesh = state.mesh;
-  if (!mesh || !mesh.cells || !changeData) return;
-  const dpr = DPR;
-  const side = Math.max(1.5, 0.0045 * state.view.scale) * dpr * 1.6;
+  if (!mesh || !changeData) return;
+  const side = Math.max(1.5, 0.0045 * state.view.scale) * DPR * 1.6;
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const brush = beginLayer(side, 0.9);
   for (const [n, row] of changeData.byCell) {
-    if (n >= mesh.mx.length) continue;
-    const x = cx + (mesh.mx[n] - lon) * k;
+    if (n >= mesh.n) continue;
+    const x = cx + (mesh.lon[n] - lon) * k;
     if (x < -side || x > w + side) continue;
     const y = cy - (mesh.my[n] - my) * k;
     if (y < -side || y > h + side) continue;
@@ -976,22 +1075,21 @@ function drawChangeLayer() {
 
 function updateChange() {
   const box = $("changeMetric");
-  const cells = scopedCells();
-  if (!cells || !changeData || state.mode !== "change") { box.hidden = true; return; }
-  const pi = state.meshField.pop, pri = state.meshField.pref;
-  const within = state.prefFilter;
+  const idx = scopedCells();
+  if (!idx || !changeData || state.mode !== "change") { box.hidden = true; return; }
+  const mesh = state.mesh;
+  const within = state.prefFilter ? parseInt(state.prefFilter, 10) : 0;
   let gone = 0, earlier = 0, better = 0, base = 0, shift = 0;
   for (const [n, row] of changeData.byCell) {
-    const cell = state.mesh.cells[n];
-    if (!cell) continue;
-    if (within && cell[pri] !== within) continue;
-    const pop = cell[pi] || 0;
+    if (n >= mesh.n) continue;
+    if (within && mesh.pref[n] !== within) continue;
+    const pop = mesh.pop[n];
     const c = changeOf(row);
     if (c === -1) gone += pop;
     else if (c === -2) better += pop;
     else if (c > 0) { earlier += pop; shift += pop * c; }
   }
-  for (const cell of cells) base += cell[pi] || 0;
+  for (const i of idx) base += mesh.pop[i];
   box.hidden = false;
   // When nothing was withdrawn, the headline is the hours that moved instead.
   // Leading with a zero would read as "nothing happened" when 264,213 people
@@ -1283,6 +1381,219 @@ function playEra() {
   }, step);
 }
 
+
+/* ---------- WebGL ---------- */
+// 46万セルを毎フレーム JavaScript で回すのをやめ、点の位置と始発・終発を
+// 一度 GPU に置いて、あとは「どこを見ているか」「何時か」だけを渡す。
+// 色は頂点シェーダで決める（セルごとに1回）。ライブラリは使わない —
+// 四角を並べるだけなら 100 行ほどで済み、deck.gl を持ち込む理由が無い。
+//
+// セルは gl_PointSize ではなく四角のインスタンスにする。gl_PointSize には
+// 上限（環境によって 64px）があり、拡大したとき歯抜けになる。
+const glCanvas = document.getElementById("gl");
+let gl = null;
+let glState = null;
+
+const GL_VERT = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 a_corner;
+layout(location=1) in vec2 a_pos;
+layout(location=2) in float a_first;
+layout(location=3) in float a_last;
+layout(location=4) in float a_first2;
+layout(location=5) in float a_last2;
+uniform vec2 u_center;
+uniform float u_k;
+uniform vec2 u_res;
+uniform float u_side;
+uniform int u_mode;      // 0 gap, 1 drop, 2 stops retired, 3 stops live
+uniform float u_t;
+uniform sampler2D u_lut;
+out vec4 v_color;
+out vec2 v_corner;
+
+float gapOf(float f, float l) {
+  if (f < 0.0 || l < 0.0 || l < f) return -1.0;
+  return max(0.0, 86400.0 - (l - f));
+}
+
+void main() {
+  vec4 color = vec4(0.0);
+  if (u_mode == 0) {
+    float g = gapOf(a_first, a_last);
+    color = g < 0.0 ? vec4(64.0, 74.0, 92.0, 255.0) / 255.0
+                    : vec4(texture(u_lut, vec2(clamp(g / 86400.0, 0.0, 1.0), 0.25)).rgb, 1.0);
+    color.a = 0.85;
+  } else if (u_mode == 1) {
+    float wd = gapOf(a_first, a_last);
+    if (wd < 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    float ho = gapOf(a_first2, a_last2);
+    color = ho < 0.0 ? vec4(214.0, 68.0, 140.0, 255.0) / 255.0
+                     : vec4(texture(u_lut, vec2(clamp(max(0.0, ho - wd) / 21600.0, 0.0, 1.0), 0.75)).rgb, 1.0);
+    color.a = 0.85;
+  } else {
+    if (a_last < 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    bool live = a_first < 0.0 ? (u_t <= a_last) : (a_first <= u_t && u_t <= a_last);
+    if ((u_mode == 3) != live) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+    color = live ? vec4(255.0, 207.0, 107.0, 255.0) / 255.0
+                 : vec4(160.0, 178.0, 200.0, 255.0) / 255.0 * vec4(1.0, 1.0, 1.0, 0.28);
+  }
+  vec2 px = vec2(u_res.x * 0.5 + (a_pos.x - u_center.x) * u_k,
+                 u_res.y * 0.5 - (a_pos.y - u_center.y) * u_k) + a_corner * u_side;
+  gl_Position = vec4(px.x / u_res.x * 2.0 - 1.0, 1.0 - px.y / u_res.y * 2.0, 0.0, 1.0);
+  v_color = color;
+  v_corner = a_corner;
+}`;
+
+const GL_FRAG = `#version 300 es
+precision mediump float;
+in vec4 v_color;
+in vec2 v_corner;
+uniform bool u_round;
+out vec4 o;
+void main() {
+  if (u_round && length(v_corner) > 0.5) discard;
+  o = vec4(v_color.rgb * v_color.a, v_color.a);   // premultiplied
+}`;
+
+function glInit() {
+  try {
+    gl = glCanvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false });
+  } catch (e) { gl = null; }
+  if (!gl) { glCanvas.hidden = true; return; }
+  const compile = (type, src) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      throw new Error(gl.getShaderInfoLog(sh));
+    }
+    return sh;
+  };
+  try {
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, GL_VERT));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, GL_FRAG));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+    const u = {};
+    for (const n of ["u_center", "u_k", "u_res", "u_side", "u_mode", "u_t", "u_lut", "u_round"]) {
+      u[n] = gl.getUniformLocation(prog, n);
+    }
+    // 単位の四角。すべてのインスタンスがこれを使う。
+    const quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]),
+                  gl.STATIC_DRAW);
+    // 色の帯。gapColor / dropColor をそのまま 256 段に焼く。1行目が空白時間、2行目が落差。
+    const lut = new Uint8Array(256 * 2 * 4);
+    for (let i = 0; i < 256; i++) {
+      const g = gapColor(i / 255 * 86400), d = dropColor(i / 255 * 21600);
+      lut.set([g[0], g[1], g[2], 255], i * 4);
+      lut.set([d[0], d[1], d[2], 255], (256 + i) * 4);
+    }
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 2, 0, gl.RGBA, gl.UNSIGNED_BYTE, lut);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    glState = { prog, u, quad, tex, mesh: null, stops: null };
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  } catch (e) {
+    // シェーダが通らない環境。Canvas に戻る。
+    gl = null;
+    glCanvas.hidden = true;
+  }
+}
+
+// 位置（経度・Mercator の y）と曜日ごとの始発・終発を GPU に置く。
+// Int32 の時刻は Float32 に写す（最大 110,700 秒で精度は落ちない）。
+function glUpload(kind, obj) {
+  if (!gl) return;
+  const old = glState[kind];
+  if (old) { gl.deleteBuffer(old.pos); for (const b of Object.values(old.times)) { gl.deleteBuffer(b.first); gl.deleteBuffer(b.last); } }
+  const n = obj.n;
+  const pos = new Float32Array(n * 2);
+  const lons = kind === "mesh" ? obj.lon : obj.lons;
+  for (let i = 0; i < n; i++) { pos[i * 2] = lons[i]; pos[i * 2 + 1] = obj.my[i]; }
+  const up = (arr) => {
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+    return b;
+  };
+  const entry = { n, pos: up(pos), times: {} };
+  for (const [b, t] of Object.entries(obj.times)) {
+    entry.times[b] = { first: up(new Float32Array(t.first)), last: up(new Float32Array(t.last)) };
+  }
+  glState[kind] = entry;
+}
+
+function glClear() {
+  if (!gl) return;
+  gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+}
+
+function glAttrib(loc, buffer, size) {
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribDivisor(loc, 1);
+}
+
+function glDraw() {
+  glClear();
+  const S = glState;
+  const { prog, u } = S;
+  const src = state.mode === "stops" ? S.stops : S.mesh;
+  const data = state.mode === "stops" ? state.data : state.mesh;
+  if (!src || !data || !src.times[state.bucket]) return;
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, S.quad);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribDivisor(0, 0);
+  glAttrib(1, src.pos, 2);
+  const t = src.times[state.bucket];
+  glAttrib(2, t.first, 1);
+  glAttrib(3, t.last, 1);
+  if (state.mode === "drop" && src.times.ho) {
+    glAttrib(4, src.times.ho.first, 1);
+    glAttrib(5, src.times.ho.last, 1);
+  } else {
+    glAttrib(4, t.first, 1);
+    glAttrib(5, t.last, 1);
+  }
+  const k = state.view.scale * DPR;
+  gl.uniform2f(u.u_center, state.view.lon, mercY(state.view.lat));
+  gl.uniform1f(u.u_k, k);
+  gl.uniform2f(u.u_res, glCanvas.width, glCanvas.height);
+  gl.uniform1f(u.u_t, state.t);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, S.tex);
+  gl.uniform1i(u.u_lut, 0);
+  if (state.mode === "stops") {
+    const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * DPR;
+    gl.uniform1f(u.u_side, r * 2);
+    gl.uniform1i(u.u_round, r > PIXEL_SIDE ? 1 : 0);
+    // 消えた点を先に、動いている点をその上に。
+    gl.uniform1i(u.u_mode, 2);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
+    gl.uniform1i(u.u_mode, 3);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
+  } else {
+    gl.uniform1f(u.u_side, Math.max(1.5, 0.0045 * state.view.scale) * DPR);
+    gl.uniform1i(u.u_round, 0);
+    gl.uniform1i(u.u_mode, state.mode === "gap" ? 0 : 1);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, src.n);
+  }
+}
+
 /* ---------- basemap ---------- */
 // 地理院タイル（淡色地図）. Drawn inverted so a map designed for white paper
 // sits under a dark point layer without washing it out. Tiles are the one
@@ -1354,6 +1665,10 @@ function resize() {
   canvas.height = Math.floor(innerHeight * DPR);
   canvas.style.width = innerWidth + "px";
   canvas.style.height = innerHeight + "px";
+  glCanvas.width = canvas.width;
+  glCanvas.height = canvas.height;
+  glCanvas.style.width = canvas.style.width;
+  glCanvas.style.height = canvas.style.height;
   // 裏のキャンバスは使う側（beginLayer）が必要な大きさで作り直す。控えは
   // 画面の大きさで作ってあるので捨てる。
   layerCache.key = null;
@@ -1368,38 +1683,42 @@ function requestRender() {
   renderPending = requestAnimationFrame(() => { renderPending = 0; render(); });
 }
 
-// 停留所の数え上げは地図の位置に依らないので、控えと同じ鍵で覚えておく。
-let stopCounts = { key: null, live: 0, served: 0 };
 
 function render() {
   const data = state.data;
   ctx.fillStyle = getComputedStyle(document.body).getPropertyValue("--bg");
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   drawBasemap();
-  if (state.mode !== "stops") {
-    // The two layers answer different questions -- "is there a bus after this
-    // moment" and "how much of the day has none" -- and drawn together
-    // neither reads. The stop layer steps aside.
-    drawCachedLayer(state.mode === "gap" ? drawGapLayer
-                    : state.mode === "drop" ? drawDropLayer
-                    : state.mode === "timeline" ? drawTimelineLayer
-                    : drawChangeLayer);
-    if (data) updateReadout(0, 0, populationShare(state.t));
-    return;
+  // 重い層（メッシュ・停留所）は GPU に任せる。変化と年表は小さいので、
+  // 控え付きの Canvas のまま。WebGL2 が無ければ全部 Canvas で描く。
+  const heavy = state.mode === "gap" || state.mode === "drop" || state.mode === "stops";
+  if (gl && heavy) {
+    glDraw();
+  } else {
+    glClear();
+    if (state.mode !== "stops") {
+      drawCachedLayer(state.mode === "gap" ? drawGapLayer
+                      : state.mode === "drop" ? drawDropLayer
+                      : state.mode === "timeline" ? drawTimelineLayer
+                      : drawChangeLayer);
+    } else if (data) {
+      drawCachedLayer(drawStopsLayer);
+    }
   }
   if (!data) return;
-  drawCachedLayer(drawStopsLayer);
-  updateReadout(stopCounts.live, stopCounts.served, populationShare(state.t));
+  const counts = state.mode === "stops" ? stopProfile() : null;
+  const slot = Math.max(0, Math.min(SHARE_SLOTS - 1, Math.round((state.t - MIN_T) / SHARE_STEP)));
+  updateReadout(counts ? counts.live[slot] : 0, counts ? counts.served : 0,
+                populationShare(state.t));
 }
 
 function drawStopsLayer() {
   const data = state.data;
   const t = state.t;
-  const dpr = DPR;
-  const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * dpr;
+  const r = Math.max(0.7, Math.min(3.2, state.view.scale / 40)) * DPR;
   const T = target();
-
-  let liveStops = 0, servedStops = 0;
+  const times = data.times[state.bucket];
+  if (!times) return;
 
   // Two passes so live points always sit on top of retired ones.
   //
@@ -1410,17 +1729,13 @@ function drawStopsLayer() {
   const live = [];
   const { k, cx, cy, w, h, lon, my } = viewTransform();
   const lons = data.lons, mys = data.my;
-  const times = (data.times || {})[state.bucket];
-  const firsts = times && times.first, lasts = times && times.last;
-  const n = data.stops.length;
+  const firsts = times.first, lasts = times.last;
   const retired = beginLayer(r, 0.28);
-  for (let i = 0; i < n; i++) {
-    const last = lasts ? lasts[i] : -1;
+  for (let i = 0; i < data.n; i++) {
+    const last = lasts[i];
     if (last < 0) continue;                     // no service this day type
-    servedStops++;
     const first = firsts[i];
     const live_ = first < 0 ? t <= last : (first <= t && t <= last);
-    if (live_) liveStops++;
     const x = cx + (lons[i] - lon) * k;
     if (x < -20 || x > w + 20) continue;
     const y = cy - (mys[i] - my) * k;
@@ -1432,8 +1747,6 @@ function drawStopsLayer() {
 
   T.ctx.fillStyle = "#ffcf6b";
   if (r <= PIXEL_SIDE) {
-    // One arc per point costs more than the whole rest of the frame once
-    // there are tens of thousands of them and each is a pixel wide.
     for (let i = 0; i < live.length; i += 2) {
       T.ctx.fillRect(live[i] - r / 2, live[i + 1] - r / 2, r, r);
     }
@@ -1445,7 +1758,6 @@ function drawStopsLayer() {
     }
     T.ctx.fill();
   }
-  stopCounts = { key: layerKey(), live: liveStops, served: servedStops };
 }
 
 // スライダーの1目盛りごとに46万セルを数え直していた。運行時間帯は区間なので、
@@ -1455,27 +1767,26 @@ const SHARE_SLOTS = Math.floor((MAX_T - MIN_T) / SHARE_STEP) + 1;
 
 function shareProfile() {
   const mesh = state.mesh;
-  const cells = scopedCells();
-  if (!mesh || !cells || !cells.length) return null;
+  const idx = scopedCells();
+  if (!mesh || !idx || !idx.length || !mesh.times[state.bucket]) return null;
   const key = `${dataEpoch}|${state.bucket}|${state.prefFilter}`;
   if (shareCache.key === key) return shareCache.value;
 
-  const li = state.meshField[`${state.bucket}_last`];
-  const fi = state.meshField[`${state.bucket}_first`];
-  const pi = state.meshField.pop;
+  const { first: firsts, last: lasts } = mesh.times[state.bucket];
+  const pops = mesh.pop;
   const delta = new Float64Array(SHARE_SLOTS + 1);
   let everServed = 0, total = 0;
   // 端は丸めずに、始発は次の目盛りまで切り上げ、終発は前の目盛りまで切り下げる。
   // 先に丸めてしまうと 04:35 発が 04:30 から動いていることになる。
   const slot = (v) => (v - MIN_T) / SHARE_STEP;
-  for (const cell of cells) {
-    const pop = cell[pi] || 0;
+  for (const i of idx) {
+    const pop = pops[i];
     total += pop;
-    const last = cell[li];
-    if (last === null || last === undefined) continue;
+    const last = lasts[i];
+    if (last < 0) continue;
     everServed += pop;
-    const first = cell[fi];
-    const from = Math.max(0, first === null || first === undefined ? 0 : Math.ceil(slot(first)));
+    const first = firsts[i];
+    const from = Math.max(0, first < 0 ? 0 : Math.ceil(slot(first)));
     const to = Math.min(SHARE_SLOTS - 1, Math.floor(slot(last)));
     if (to < from) continue;
     delta[from] += pop;
@@ -1612,28 +1923,26 @@ let lastAggKey = null;
 let curveCache = null;   // {key, points:[{t,pop}], total}
 
 function curveFor() {
-  const cells = scopedCells();
-  const li = cells && state.meshField[`${state.bucket}_last`];
-  if (!cells || li === undefined) return null;
-  const key = `${state.bucket}:${state.prefFilter || "-"}:${cells.length}`;
+  const mesh = state.mesh;
+  const idx = scopedCells();
+  if (!mesh || !idx || !mesh.times[state.bucket]) return null;
+  const key = `${dataEpoch}:${state.bucket}:${state.prefFilter || "-"}:${idx.length}`;
   if (curveCache && curveCache.key === key) return curveCache;
-  const pi = state.meshField.pop;
+  const { first: firsts, last: lasts } = mesh.times[state.bucket];
   const points = [];
   for (let t = CURVE_FROM; t <= CURVE_TO; t += CURVE_STEP) points.push({ t, pop: 0 });
   let total = 0;
-  const fi = state.meshField[`${state.bucket}_first`];
-  for (const cell of cells) {
-    const last = cell[li];
-    const pop = cell[pi] || 0;
+  for (const i of idx) {
+    const last = lasts[i];
+    const pop = mesh.pop[i];
     total += pop;
-    if (last === null || last === undefined) continue;
+    if (last < 0) continue;
     // Counted from the first bus to the last. A place whose service starts
     // after the curve begins should not be drawn as running all evening.
-    const first = cell[fi];
-    const from = (first === null || first === undefined)
-      ? 0 : Math.max(0, Math.ceil((first - CURVE_FROM) / CURVE_STEP));
+    const first = firsts[i];
+    const from = first < 0 ? 0 : Math.max(0, Math.ceil((first - CURVE_FROM) / CURVE_STEP));
     const upto = Math.min(points.length - 1, Math.floor((last - CURVE_FROM) / CURVE_STEP));
-    for (let i = from; i <= upto; i++) points[i].pop += pop;
+    for (let j = from; j <= upto; j++) points[j].pop += pop;
   }
   curveCache = { key, points, total };
   return curveCache;
@@ -1755,15 +2064,18 @@ let shareCache = { key: null, value: null };
 
 function scopedCells() {
   const mesh = state.mesh;
-  if (!mesh || !mesh.cells) return null;
-  if (!state.prefFilter) return mesh.cells;
-  const pri = state.meshField.pref;
-  if (pri === undefined) return mesh.cells;
+  if (!mesh || !mesh.n) return null;
+  if (!state.prefFilter) return mesh.all;
   const key = `${dataEpoch}|${state.prefFilter}`;
   if (scopeCache.key !== key) {
-    // フィルタは毎フレーム新しい配列を作っていた。県を選ぶと重くなるのは
-    // 描画ではなくこれだった。
-    scopeCache = { key, cells: mesh.cells.filter((c) => c[pri] === state.prefFilter) };
+    // 県の添字だけを1回取り出す。毎フレーム作り直していたのが、県を選ぶと
+    // 重くなる理由だった。
+    const want = parseInt(state.prefFilter, 10);
+    let count = 0;
+    for (let i = 0; i < mesh.n; i++) if (mesh.pref[i] === want) count++;
+    const cells = new Uint32Array(count);
+    for (let i = 0, j = 0; i < mesh.n; i++) if (mesh.pref[i] === want) cells[j++] = i;
+    scopeCache = { key, cells };
   }
   return scopeCache.cells;
 }
@@ -1792,27 +2104,24 @@ let prefCache = null;
 
 function prefStats() {
   const mesh = state.mesh;
-  const fi = mesh && state.meshField[`${state.bucket}_first`];
-  const li = mesh && state.meshField[`${state.bucket}_last`];
-  const pri = mesh && state.meshField.pref;
-  if (!mesh || !mesh.cells || fi === undefined || li === undefined || pri === undefined) return null;
-  const key = `${state.bucket}:${mesh.cells.length}`;
+  if (!mesh || !mesh.n || !mesh.times[state.bucket]) return null;
+  const key = `${dataEpoch}:${state.bucket}`;
   if (prefCache && prefCache.key === key) return prefCache;
-  const pi = state.meshField.pop, la = state.meshField.lat, lo = state.meshField.lon;
+  const { first: firsts, last: lasts } = mesh.times[state.bucket];
   const acc = new Map();
-  for (const cell of mesh.cells) {
-    const pref = cell[pri];
-    if (!pref) continue;
-    let g = acc.get(pref);
-    if (!g) acc.set(pref, g = { pref, pop: 0, served: 0, gapPop: 0, gapSum: 0,
-                                lats: [], lons: [] });
-    const pop = cell[pi] || 0;
+  for (let i = 0; i < mesh.n; i++) {
+    const code = mesh.pref[i];
+    if (!code) continue;
+    let g = acc.get(code);
+    if (!g) acc.set(code, g = { pref: String(code).padStart(2, "0"), pop: 0, served: 0,
+                                gapPop: 0, gapSum: 0, lats: [], lons: [] });
+    const pop = mesh.pop[i];
     g.pop += pop;
-    g.lats.push([cell[la], pop]);
-    g.lons.push([cell[lo], pop]);
-    if (cell[li] === null || cell[li] === undefined) continue;
+    g.lats.push([mesh.lat[i], pop]);
+    g.lons.push([mesh.lon[i], pop]);
+    if (lasts[i] < 0) continue;
     g.served += pop;
-    const gap = gapSeconds(cell[fi], cell[li]);
+    const gap = gapSeconds(firsts[i], lasts[i]);
     if (gap !== null) { g.gapPop += pop; g.gapSum += pop * gap; }
   }
   const rows = [...acc.values()]
@@ -1882,20 +2191,22 @@ $("prefToggle").onclick = (e) => {
 // day -- so it is reported next to the time-dependent figures rather than
 // inside them.
 function updateGap() {
-  const cells = scopedCells();
+  const idx = scopedCells();
   const box = $("gapMetric");
-  const fi = state.meshField[`${state.bucket}_first`];
-  const li = state.meshField[`${state.bucket}_last`];
-  if (!cells || fi === undefined || li === undefined) {
+  const mesh = state.mesh;
+  if (!idx || !mesh.times[state.bucket]) {
     box.hidden = true;
     return;
   }
-  const pi = state.meshField.pop;
-  let people = 0, weighted = 0, worst = 0;
-  for (const cell of cells) {
-    const gap = gapSeconds(cell[fi], cell[li]);
+  const { first: firsts, last: lasts } = mesh.times[state.bucket];
+  const pops = mesh.pop;
+  let people = 0, weighted = 0, worst = 0, none = 0, all = 0;
+  for (const i of idx) {
+    const pop = pops[i];
+    all += pop;
+    if (lasts[i] < 0) { none += pop; continue; }
+    const gap = gapSeconds(firsts[i], lasts[i]);
     if (gap === null) continue;
-    const pop = cell[pi] || 0;
     people += pop;
     weighted += pop * gap;
     if (gap >= 20 * 3600) worst += pop;      // 1日4時間未満しか便がない
@@ -1906,12 +2217,6 @@ function updateGap() {
   const mean = weighted / people;
   $("gapValue").textContent =
     `${Math.floor(mean / 3600)}時間${String(Math.round(mean % 3600 / 60)).padStart(2, "0")}分`;
-  let none = 0, all = 0;
-  for (const cell of cells) {
-    const pop = cell[pi] || 0;
-    all += pop;
-    if (cell[li] === null || cell[li] === undefined) none += pop;
-  }
   const share = all ? people / all : 0;
   $("gapNote").innerHTML =
     `便がある ${Math.round(people).toLocaleString("ja-JP")} 人の平均。` +
@@ -2013,23 +2318,20 @@ function showTip(e) {
   const data = state.data;
   const tip = $("tip");
   if (!data || state.view.scale < 400) { tip.style.display = "none"; return; }
-  const lastIdx = state.field[`${state.bucket}_last_dep`];
-  const firstIdx = state.field[`${state.bucket}_first_dep`];
-  const nameIdx = state.field.name;
+  const times = data.times[state.bucket];
   let best = -1, bestD = 14 * 14;
-  for (let i = 0; i < data.stops.length; i++) {
+  for (let i = 0; i < data.n; i++) {
     const [x, y] = project(data.lats[i], data.lons[i]);
     const dx = x / DPR - e.clientX, dy = y / DPR - e.clientY;
     const d = dx * dx + dy * dy;
     if (d < bestD) { bestD = d; best = i; }
   }
   if (best < 0) { tip.style.display = "none"; return; }
-  const s = data.stops[best];
-  const last = s[lastIdx], first = s[firstIdx];
-  tip.innerHTML = `<b>${s[nameIdx]}</b><br>` +
-    (last === null || last === undefined
-      ? "この曜日は運行なし"
-      : `始発 ${fmt(first)} / 終バス ${fmt(last)}`);
+  if (!data.names) ensureNames();
+  const name = data.names ? data.names[best] : "…";
+  const last = times ? times.last[best] : -1, first = times ? times.first[best] : -1;
+  tip.innerHTML = `<b>${name}</b><br>` +
+    (last < 0 ? "この曜日は運行なし" : `始発 ${fmt(first)} / 終バス ${fmt(last)}`);
   tip.style.display = "block";
   tip.style.left = (e.clientX + 14) + "px";
   tip.style.top = (e.clientY + 14) + "px";
@@ -2110,15 +2412,15 @@ async function readUrl() {
   const select = $("dataset");
   manifest.forEach((d, i) => {
     const opt = document.createElement("option");
-    opt.value = d.path; opt.textContent = d.label; select.appendChild(opt);
+    opt.value = String(i); opt.textContent = d.label; select.appendChild(opt);
   });
-  const meshOf = (path) => (manifest.find((d) => d.path === path) || {}).mesh;
-  select.onchange = () => loadDataset(select.value, meshOf(select.value)).catch(showError);
+  select.onchange = () => loadDataset(manifest[+select.value]).catch(showError);
   select.style.display = manifest.length > 1 ? "" : "none";
+  glInit();
   resize();
   loadCredits();
   try {
-    await loadDataset(manifest[0].path, manifest[0].mesh);
+    await loadDataset(manifest[0]);
     await readUrl();
   } catch (err) { showError(err); }
 })();

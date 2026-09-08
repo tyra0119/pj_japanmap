@@ -1,8 +1,9 @@
 [
   {
     "label": "全国2026",
-    "path": "stops-2026.json",
-    "mesh": "mesh-2026.json",
-    "target_date": "2026-09-07"
+    "target_date": "2026-09-07",
+    "bin": "stops-2026.bin",
+    "names": "names-2026.json",
+    "mesh_bin": "mesh-2026.bin"
   }
 ]
