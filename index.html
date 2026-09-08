@@ -159,7 +159,8 @@
   #creditBody .ops { column-count: 2; column-gap: 12px; font-size: 10px; line-height: 1.45; }
   #tip { position: absolute; pointer-events: none; display: none; background: var(--panel);
          border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; font-size: 11.5px;
-         white-space: nowrap; z-index: 5; }
+         white-space: nowrap; z-index: 5; line-height: 1.5; }
+  #tip .tsub { color: var(--muted); font-size: 10.5px; }
   #status { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
 </style>
 </head>
@@ -198,7 +199,7 @@
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>人が住んでいない（塗らない）</div>
       <div class="hintline">6時間＝朝6時から24時まで動く町。20時間＝1日4時間しか便が無い。
         両端は頭打ち（6時間以下・20時間以上はそれぞれ同じ色）。<br>
-        場所の性質なので時刻では変わらない</div>
+        場所の性質なので時刻では変わらない。<b>拡大してセルに合わせると内訳が出る</b></div>
     </div>
     <div class="legend" id="legendDrop" hidden>
       <div class="row">休日に空白時間がどれだけ延びるか（平日との差）</div>
@@ -206,7 +207,7 @@
       <div class="row"><span class="dot" id="dropNoneDot"></span>休日は1本も無い</div>
       <div class="row"><span class="dot" style="background:transparent;border:1px solid var(--line)"></span>平日にも便が無い（比べようがない・塗らない）</div>
       <div class="hintline">6時間以上は同じ色で頭打ち。
-        曜日の切替は使わない（平日と休日を比べている）</div>
+        曜日の切替は使わない（平日と休日を比べている）。<b>拡大してセルに合わせると内訳が出る</b></div>
     </div>
     <div class="legend" id="legendChange" hidden>
       <select id="changePick"></select>
@@ -2404,10 +2405,42 @@ canvas.addEventListener("wheel", (e) => {
   requestRender();
 }, { passive: false });
 
-function showTip(e) {
+/* ---------- カーソルの下にあるもの ---------- */
+// 停留所モード以外で塗っているのはメッシュのセルであって停留所ではない。
+// そこにバス停の名前を出すと、その数字がそのバス停のものだと読めてしまう
+// （セルの終発は徒歩500m圏の停留所の中で一番遅いもので、名前のバス停の
+// ものとは限らない）。モードごとに、その色が何を意味するかを出す。
+
+// セルは 500m メッシュの格子に乗っているので、緯度経度から添字で引ける。
+// 46万件を総当たりする必要がない。
+function cellAt(lat, lon) {
+  const mesh = state.mesh;
+  if (!mesh || !mesh.n) return -1;
+  if (!mesh.index) {
+    const map = new Map();
+    for (let i = 0; i < mesh.n; i++) {
+      map.set(Math.round(mesh.lat[i] * 240 - 0.5) * 100000
+              + Math.round(mesh.lon[i] * 160 - 0.5), i);
+    }
+    mesh.index = map;
+  }
+  const key = Math.round(lat * 240 - 0.5) * 100000 + Math.round(lon * 160 - 0.5);
+  const hit = mesh.index.get(key);
+  return hit === undefined ? -1 : hit;
+}
+
+function dur(seconds) {
+  return `${Math.floor(seconds / 3600)}時間${String(Math.round(seconds % 3600 / 60)).padStart(2, "0")}分`;
+}
+
+function cellHead(i) {
+  const name = PREF_NAMES[state.mesh.pref[i] - 1];
+  return `<b>500mメッシュ${name ? "・" + name : ""}</b>`
+    + `<br><span class="tsub">人口 ${Math.round(state.mesh.pop[i]).toLocaleString("ja-JP")} 人</span>`;
+}
+
+function stopTip(e) {
   const data = state.data;
-  const tip = $("tip");
-  if (!data || state.view.scale < 400) { tip.style.display = "none"; return; }
   const times = data.times[state.bucket];
   let best = -1, bestD = 14 * 14;
   for (let i = 0; i < data.n; i++) {
@@ -2416,12 +2449,83 @@ function showTip(e) {
     const d = dx * dx + dy * dy;
     if (d < bestD) { bestD = d; best = i; }
   }
-  if (best < 0) { tip.style.display = "none"; return; }
+  if (best < 0) return null;
   if (!data.names) ensureNames();
-  const name = data.names ? data.names[best] : "…";
+  const name = data.names ? data.names[best] : "読み込み中…";
   const last = times ? times.last[best] : -1, first = times ? times.first[best] : -1;
-  tip.innerHTML = `<b>${name}</b><br>` +
-    (last < 0 ? "この曜日は運行なし" : `始発 ${fmt(first)} / 終バス ${fmt(last)}`);
+  return `<b>${name}</b><br>`
+    + (last < 0 ? "この曜日は運行なし" : `始発 ${fmt(first)} / 終バス ${fmt(last)}`);
+}
+
+function cellTip(e) {
+  const mesh = state.mesh;
+  if (!mesh) return null;
+  const [lat, lon] = unproject(e.clientX, e.clientY);
+  const i = cellAt(lat, lon);
+  if (i < 0) return `<b>500mメッシュ</b><br><span class="tsub">人が住んでいないので塗っていない</span>`;
+  const head = cellHead(i);
+  const t = mesh.times[state.bucket];
+  if (state.mode === "gap") {
+    const gap = t ? gapSeconds(t.first[i], t.last[i]) : null;
+    return head + "<br>" + (gap === null
+      ? "このデータには便が無い"
+      : `公共交通が無い時間 <b>${dur(gap)}</b><br>`
+        + `<span class="tsub">始発 ${fmt(t.first[i])} / 終バス ${fmt(t.last[i])}</span>`);
+  }
+  if (state.mode === "drop") {
+    const drop = holidayDrop(i);
+    if (drop === null) return head + "<br>平日にも便が無い（比べようがない）";
+    if (drop === "none") return head + "<br><b>休日は1本も無い</b>";
+    const wd = mesh.times.wd, ho = mesh.times.ho;
+    return head + "<br>"
+      + (drop ? `休日は空白が <b>${dur(drop)}</b> 延びる` : "休日も平日と同じ（延びない）")
+      + `<br><span class="tsub">平日 ${fmt(wd.first[i])}〜${fmt(wd.last[i])} / `
+      + `休日 ${fmt(ho.first[i])}〜${fmt(ho.last[i])}</span>`;
+  }
+  if (state.mode === "change" && changeData) {
+    const row = changeData.byCell.get(i);
+    if (!row) return head + "<br>この比較では変わっていない";
+    const was = row[changeData.index[`was_${state.bucket}_last`]];
+    const now = row[changeData.index[`now_${state.bucket}_last`]];
+    const gone = (v) => v === null || v === undefined;
+    if (!gone(was) && gone(now)) return head + "<br><b>便が無くなった</b>"
+      + `<br><span class="tsub">前は終発 ${fmt(was)}</span>`;
+    if (gone(was)) return head + (gone(now) ? "<br>変わっていない" : "<br>便が増えた");
+    const diff = was - now;
+    return head + `<br>終発 ${fmt(was)} → <b>${fmt(now)}</b>`
+      + `<br><span class="tsub">${diff > 0 ? `${Math.round(diff / 60)}分 早まった`
+                                 : diff < 0 ? `${Math.round(-diff / 60)}分 遅くなった` : "変わっていない"}</span>`;
+  }
+  if (state.mode === "timeline" && timelineData) {
+    const series = timelineData;
+    if (!series.byCell) {
+      series.byCell = new Map(series.cells.map((row) => [row[0], row]));
+    }
+    const row = series.byCell.get(i);
+    if (!row) return head + `<br>${series.label} の範囲外`;
+    const now = eraTimes(series, row, state.era)[1];
+    const base = eraTimes(series, row, 0)[1];
+    const gen = series.generations[state.era];
+    if (now === null || now === undefined) {
+      return head + `<br>${gen.date} にはこの曜日の便が無い`;
+    }
+    // 起点そのものを見ているときに「起点から変わらない」と書いても仕方がない。
+    const diff = state.era === 0 || base === null || base === undefined ? null : base - now;
+    return head + `<br>${gen.date} の終発 <b>${fmt(now)}</b>`
+      + (diff === null ? "" : `<br><span class="tsub">起点（${series.generations[0].date}）`
+         + ` ${fmt(base)} から ${diff > 0 ? `${Math.round(diff / 60)}分 早い`
+              : diff < 0 ? `${Math.round(-diff / 60)}分 遅い` : "変わらない"}</span>`);
+  }
+  return head;
+}
+
+function showTip(e) {
+  const tip = $("tip");
+  if (!state.data || state.view.scale < 400) { tip.style.display = "none"; return; }
+  ensureNames();
+  const html = state.mode === "stops" ? stopTip(e) : cellTip(e);
+  if (!html) { tip.style.display = "none"; return; }
+  tip.innerHTML = html;
   tip.style.display = "block";
   tip.style.left = (e.clientX + 14) + "px";
   tip.style.top = (e.clientY + 14) + "px";
