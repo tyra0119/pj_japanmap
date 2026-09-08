@@ -320,7 +320,49 @@
 <script>
 "use strict";
 
-const MIN_T = 4 * 3600, MAX_T = 26 * 3600;
+// スライダーの端。既定は 4:00〜26:00 だが、**データが先まで走っていれば
+// そちらに合わせる**。26:00 で切っていたときは、それ以降に走る便が
+// いつまでも消えず、地図が最後まで暗くならなかった。全国では9件が26時台
+// （柏の深夜バス）、1件が 30:45（札幌発の夜行が根室に着く便。終着の1つ
+// 手前で乗車可のまま載っている）。
+const CLOCK_FLOOR = 4 * 3600, CLOCK_CEIL = 26 * 3600;
+let MIN_T = CLOCK_FLOOR, MAX_T = CLOCK_CEIL;
+let SHARE_SLOTS = 0, CURVE_FROM = MIN_T, CURVE_TO = MAX_T;
+
+// 時刻の端をデータから決め直す。運行時間帯は区間で持っているので、
+// 目盛りの数（差分配列の長さ）もここで決まる。
+function fitClock() {
+  // 端に必要なのは2つだけ。「どの場所も一度は点く」ことと、「最後には
+  // 全部消える」こと。運行時間帯は区間なので、どちらも終発だけで決まる
+  // （始発が 00:20 の便はあるが、その場所は 04:00 の時点でまだ運行時間帯の
+  // 中にいるので、下の端を 00:20 まで下げる必要はない）。
+  let lo = Infinity, hi = -Infinity;
+  for (const src of [state.data, state.mesh]) {
+    if (!src || !src.times) continue;
+    for (const t of Object.values(src.times)) {
+      for (let i = 0; i < t.last.length; i++) {
+        const l = t.last[i];
+        if (l < 0) continue;
+        if (l < lo) lo = l;
+        if (l > hi) hi = l;
+      }
+    }
+  }
+  const step = 1800;
+  MIN_T = Number.isFinite(lo) ? Math.min(CLOCK_FLOOR, Math.floor(lo / step) * step) : CLOCK_FLOOR;
+  MAX_T = Number.isFinite(hi) ? Math.max(CLOCK_CEIL, Math.ceil(hi / step) * step) : CLOCK_CEIL;
+  SHARE_SLOTS = Math.floor((MAX_T - MIN_T) / SHARE_STEP) + 1;
+  CURVE_FROM = MIN_T;
+  CURVE_TO = MAX_T;
+  const time = $("time");
+  time.min = MIN_T;
+  time.max = MAX_T;
+  state.t = Math.max(MIN_T, Math.min(MAX_T, state.t));
+  time.value = state.t;
+  shareCache = { key: null, value: null };
+  stopProfiles = {};
+  curveCache = null;
+}
 
 // 地図の描画は画面の画素数に比例する。Retina では devicePixelRatio が 2〜3 に
 // なり、46万セルを 2100万画素の裏キャンバスに置くことになって、控えを作り直す
@@ -619,6 +661,7 @@ async function loadDataset(entry) {
   stopProfiles = {};
   glUpload("stops", data);
   await loadMesh(entry);
+  fitClock();
   await loadChangeList();
   await loadTimelineList();
   // Refit only when the new dataset describes somewhere else, so switching to
@@ -1853,7 +1896,6 @@ function drawStopsLayer() {
 // スライダーの1目盛りごとに46万セルを数え直していた。運行時間帯は区間なので、
 // 始発で足して終発の次で引く差分の配列を1回作れば、あとの時刻は引くだけで済む。
 const SHARE_STEP = 300;
-const SHARE_SLOTS = Math.floor((MAX_T - MIN_T) / SHARE_STEP) + 1;
 
 function shareProfile() {
   const mesh = state.mesh;
@@ -2008,7 +2050,7 @@ function updateReadout(liveStops, servedStops, pop) {
 // long flat afternoon, and a collapse after 22:00 that is far sharper than
 // the morning rise. It spans the same hours as the slider so the marker on it
 // is always meaningful.
-const CURVE_FROM = MIN_T, CURVE_TO = MAX_T, CURVE_STEP = 1800;
+const CURVE_STEP = 1800;
 let lastAggKey = null;
 let curveCache = null;   // {key, points:[{t,pop}], total}
 
@@ -2056,7 +2098,9 @@ function drawCurve() {
 
   g.strokeStyle = "#232b36";
   g.beginPath();
-  for (let hh = 6; hh <= 24; hh += 6) { g.moveTo(x(hh * 3600), 0); g.lineTo(x(hh * 3600), h - 12); }
+  const hours = [];
+  for (let hh = Math.ceil(CURVE_FROM / 3600 / 6) * 6; hh * 3600 <= CURVE_TO; hh += 6) hours.push(hh);
+  for (const hh of hours) { g.moveTo(x(hh * 3600), 0); g.lineTo(x(hh * 3600), h - 12); }
   g.stroke();
 
   g.beginPath();
@@ -2080,7 +2124,7 @@ function drawCurve() {
 
   g.fillStyle = "#8896a8";
   g.font = "9px system-ui, sans-serif";
-  for (const hh of [6, 12, 18, 24]) g.fillText(`${hh}`, x(hh * 3600) - 4, h - 2);
+  for (const hh of hours) g.fillText(`${hh}`, x(hh * 3600) - 4, h - 2);
 
   // The asymmetry is the finding: the day is gained over hours and lost in
   // one. Naming both ends is what makes that visible in words as well.
@@ -2600,8 +2644,6 @@ async function readUrl() {
 }
 
 (async function init() {
-  const time = $("time");
-  time.min = MIN_T; time.max = MAX_T; time.value = state.t;
   const manifest = await loadManifest();
   const select = $("dataset");
   manifest.forEach((d, i) => {
